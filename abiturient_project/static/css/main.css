@@ -1,0 +1,171 @@
+/* ===== Базовые стили ===== */
+html, body {
+  height: 100%;
+}
+
+body {
+  background: #f8f9fa;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Навбар ===== */
+.navbar-brand span {
+  color: #6f42c1;
+  font-weight: 600;
+}
+
+.nav-link.active {
+  color: #6f42c1 !important;
+  font-weight: 500;
+}
+
+/* ===== Основной цвет (переопределение Bootstrap primary) ===== */
+.btn-primary {
+  background: #6f42c1;
+  border-color: #6f42c1;
+}
+
+.btn-primary:hover {
+  background: #5a32a3;
+  border-color: #5a32a3;
+}
+
+.btn-primary:focus,
+.btn-primary:active {
+  background: #5a32a3;
+  border-color: #5a32a3;
+  box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.35);
+}
+
+.btn-outline-primary {
+  color: #6f42c1;
+  border-color: #6f42c1;
+}
+
+.btn-outline-primary:hover {
+  background: #6f42c1;
+  border-color: #6f42c1;
+}
+
+.badge.bg-primary {
+  background: #6f42c1 !important;
+}
+
+.text-primary {
+  color: #6f42c1 !important;
+}
+
+.border-primary {
+  border-color: #6f42c1 !important;
+}
+
+.progress-bar {
+  background: #6f42c1;
+}
+
+/* ===== Анимации появления ===== */
+.fade-in {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===== Карточки ===== */
+.card {
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+}
+
+.card-header {
+  border-radius: 12px 12px 0 0 !important;
+}
+
+/* ===== Футер ===== */
+footer {
+  border-top: 1px solid #e9ecef;
+}
+
+/* ===== Карточки уровня и формы обучения ===== */
+.program-meta-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 0.5px solid;
+}
+
+.program-meta-card.degree {
+  background: #eeedfe;
+  color: #534ab7;
+  border-color: #c4b5f5;
+}
+
+.program-meta-card.study-form {
+  background: #e1f5ee;
+  color: #0f6e56;
+  border-color: #9fe1cb;
+}
+
+/* ===== Пагинация ===== */
+.pagination .page-link {
+  color: #6f42c1;
+  border-color: #e9ecef;
+}
+
+.pagination .page-item.active .page-link {
+  background: #6f42c1;
+  border-color: #6f42c1;
+  color: #fff;
+}
+
+.pagination .page-link:hover {
+  background: #f3f0ff;
+  color: #6f42c1;
+  border-color: #e9ecef;
+}
+
+.pagination .page-link:focus {
+  box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.25);
+}
+.chance-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.chance-success {
+  color: #0f6e56;
+  background: #e1f5ee;
+}
+
+.chance-good {
+  color: #3b6d11;
+  background: #eaf3de;
+}
+
+.chance-warning {
+  color: #ba7517;
+  background: #faeeda;
+}
+
+.chance-danger {
+  color: #993c1d;
+  background: #faece7;
+}
+
+.chance-fail {
+  color: #a32d2d;
+  background: #fcebeb;
+}

@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% block title %}Справочник абитуриента — ЮУрГУ{% endblock %}
+
+{% block content %}
+
+<div class="d-flex align-items-center gap-3 mb-4">
+  <div>
+    <h2 class="fw-semibold mb-1">Справочник абитуриента</h2>
+    <p class="text-muted mb-0">Всё что нужно знать о поступлении в ЮУрГУ</p>
+  </div>
+</div>
+
+<!-- Быстрая навигация -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="d-flex flex-wrap gap-2">
+      <a href="#steps" class="btn btn-outline-primary btn-sm">Этапы поступления</a>
+      <a href="#documents" class="btn btn-outline-primary btn-sm">Документы</a>
+      <a href="#deadlines" class="btn btn-outline-primary btn-sm">Сроки</a>
+      <a href="#rules" class="btn btn-outline-primary btn-sm">Правила приёма</a>
+      <a href="#budget" class="btn btn-outline-primary btn-sm">Бюджет и льготы</a>
+      <a href="#faq" class="btn btn-outline-primary btn-sm">Вопросы и ответы</a>
+    </div>
+  </div>
+</div>
+
+<!-- Этапы поступления -->
+<div class="card mb-4" id="steps">
+  <div class="card-header bg-white fw-semibold py-3">
+    <i class="bi bi-list-ol text-primary me-2"></i>Этапы поступления
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      {% for step in steps %}
+      <div class="col-md-6">
+        <div class="d-flex gap-3 p-3 rounded-3" style="background: #f8f9fa;">
+          <div class="rounded-circle bg-primary text-white d-flex align-items-center
+                      justify-content-center flex-shrink-0"
+               style="width:36px;height:36px;font-size:14px;font-weight:600;">
+            {{ forloop.counter }}
+          </div>
+          <div>
+            <div class="fw-semibold mb-1">{{ step.title }}</div>
+            <div class="text-muted small">{{ step.desc }}</div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Документы -->
+<div class="card mb-4" id="documents">
+  <div class="card-header bg-white fw-semibold py-3">
+    <i class="bi bi-file-earmark-text text-primary me-2"></i>Необходимые документы
+  </div>
+  <div class="card-body">
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div class="fw-semibold mb-3">Обязательные документы</div>
+        <ul class="list-unstyled">
+          {% for doc in required_docs %}
+          <li class="d-flex align-items-start gap-2 mb-2">
+            <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0"></i>
+            <span class="small">{{ doc.text }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="col-md-6">
+        <div class="fw-semibold mb-3">Дополнительные документы</div>
+        <ul class="list-unstyled">
+          {% for doc in optional_docs %}
+          <li class="d-flex align-items-start gap-2 mb-2">
+            <i class="bi bi-circle text-muted mt-1 flex-shrink-0"></i>
+            <span class="small">{{ doc }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="alert alert-warning mt-3 mb-0 small">
+      <i class="bi bi-exclamation-triangle me-2"></i>
+      Все документы предоставляются в оригинале или заверенной копии. Иностранные документы требуют нотариального перевода.
+    </div>
+  </div>
+</div>
+
+<!-- Сроки
+<div class="card mb-4" id="deadlines">
+  <div class="card-header bg-white fw-semibold py-3">
+    <i class="bi bi-calendar3 text-primary me-2"></i>Сроки приёмной кампании 2026
+  </div>
+  <div class="list-group list-group-flush">
+    {% for d in deadlines %}
+    <div class="list-group-item py-3">
+      <div class="row align-items-center">
+        <div class="col-md-3">
+          <span class="fw-semibold text-primary">{{ d.date }}</span>
+        </div>
+        <div class="col-md-7">
+          <span>{{ d.event }}</span>
+        </div>
+        <div class="col-md-2 text-end">
+          <span class="badge bg-light text-secondary border small">{{ d.type }}</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div> -->
+
+<!-- Правила приёма -->
+<div class="card mb-4" id="rules">
+  <div class="card-header bg-white fw-semibold py-3">
+    <i class="bi bi-clipboard-check text-primary me-2"></i>Правила приёма
+  </div>
+  <div class="card-body">
+    <div class="row g-4">
+      {% for rule in rules %}
+      <div class="col-md-6">
+        <div class="fw-semibold mb-2">
+          <i class="bi bi-{{ rule.icon }} text-primary me-2"></i>{{ rule.title }}
+        </div>
+        <p class="text-muted small mb-0">{{ rule.text }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Бюджет и льготы -->
+<div class="card mb-4" id="budget">
+  <div class="card-header bg-white fw-semibold py-3">
+    <i class="bi bi-award text-primary me-2"></i>Бюджетные места и льготы
+  </div>
+  <div class="card-body">
+    <div class="row g-3 mb-4">
+      {% for cat in budget_categories %}
+      <div class="col-md-4">
+        <div class="p-3 rounded-3 text-center h-100" style="background: #f3f0ff;">
+          <div class="fw-semibold text-primary mb-1">{{ cat.title }}</div>
+          <div class="small text-muted">{{ cat.desc }}</div>
+          <div class="mt-2 fw-semibold">{{ cat.quota }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="fw-semibold mb-3">Категории льготников</div>
+    <div class="row g-2">
+      {% for benefit in benefits %}
+      <div class="col-md-6">
+        <div class="d-flex align-items-start gap-2">
+          <i class="bi bi-shield-check text-success mt-1 flex-shrink-0"></i>
+          <span class="small">{{ benefit.text }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- FAQ -->
+<div class="card mb-4" id="faq">
+  <div class="card-header bg-white fw-semibold py-3">
+    <i class="bi bi-question-circle text-primary me-2"></i>Часто задаваемые вопросы
+  </div>
+  <div class="card-body">
+    <div class="accordion accordion-flush" id="guideAccordion">
+      {% for item in faq %}
+      <div class="accordion-item border-bottom">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed px-0"
+                  style="font-size: 16px; font-weight: 500;"
+                  type="button" data-bs-toggle="collapse"
+                  data-bs-target="#guide-faq-{{ forloop.counter }}">
+            {{ item.question }}
+          </button>
+        </h2>
+        <div id="guide-faq-{{ forloop.counter }}"
+             class="accordion-collapse collapse"
+             data-bs-parent="#guideAccordion">
+          <div class="accordion-body px-0 pb-3">
+            <div class="d-flex gap-3 p-3 rounded-3" style="background: #f3f0ff;">
+              <i class="bi bi-info-circle-fill text-primary flex-shrink-0 mt-1"></i>
+              <span style="font-size: 14px; line-height: 1.7;">{{ item.answer }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Блок действий -->
+<div class="card border-0" style="background: #f3f0ff;">
+  <div class="card-body d-flex align-items-center gap-4 flex-wrap py-4">
+    <div>
+      <div class="fw-semibold fs-5 mb-1">Готов к поступлению?</div>
+      <div class="text-muted small">Рассчитай шансы или задай вопрос AI-ассистенту</div>
+    </div>
+    <div class="d-flex gap-2 ms-auto flex-wrap">
+      <a href="{% url 'programs:calculator' %}" class="btn btn-primary">
+        <i class="bi bi-calculator me-1"></i>Калькулятор ЕГЭ
+      </a>
+      <a href="{% url 'core:ai_chat_page' %}" class="btn btn-outline-primary">
+        <i class="bi bi-chat-dots me-1"></i>AI-ассистент
+      </a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

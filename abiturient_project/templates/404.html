@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Страница не найдена — ЮУрГУ{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+  <div style="font-size: 96px; line-height: 1; color: #dee2e6;">404</div>
+  <h2 class="fw-semibold mt-3 mb-2">Страница не найдена</h2>
+  <p class="text-muted mb-4">
+    Возможно, она была удалена или вы перешли по неверной ссылке.
+  </p>
+  <div class="d-flex justify-content-center gap-3 flex-wrap">
+    <a href="{% url 'core:home' %}" class="btn btn-primary">
+      <i class="bi bi-house me-2"></i>На главную
+    </a>
+    <a href="{% url 'programs:list' %}" class="btn btn-outline-primary">
+      <i class="bi bi-grid me-2"></i>Все программы
+    </a>
+  </div>
+
+  <div class="mt-5 pt-4 border-top">
+    <p class="text-muted small mb-3">Возможно, вы искали:</p>
+    <div class="d-flex justify-content-center gap-2 flex-wrap">
+      <a href="{% url 'programs:calculator' %}" class="btn btn-sm btn-outline-secondary">
+        Калькулятор ЕГЭ
+      </a>
+      <a href="{% url 'universities:list' %}" class="btn btn-sm btn-outline-secondary">
+        Университеты
+      </a>
+      <a href="{% url 'core:guide' %}" class="btn btn-sm btn-outline-secondary">
+        Справочник
+      </a>
+      <a href="{% url 'core:ai_chat_page' %}" class="btn btn-sm btn-outline-secondary">
+        AI-ассистент
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

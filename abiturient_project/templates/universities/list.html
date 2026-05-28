@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Университеты — ЮУрГУ{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-semibold mb-0">Университеты</h2>
+  <span class="text-muted">Найдено: {{ universities|length }}</span>
+</div>
+
+<!-- Поиск и сортировка -->
+<form method="get" class="card p-3 mb-4">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-6">
+      <label class="form-label small text-muted mb-1">Поиск по названию или городу</label>
+      <input type="text" name="q" value="{{ query }}" class="form-control form-control-sm"
+             placeholder="Например: МГУ или Москва">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small text-muted mb-1">Сортировка</label>
+      <select name="sort" class="form-select form-select-sm">
+        <option value=""        {% if sort == ''        %}selected{% endif %}>По названию</option>
+        <option value="h_index" {% if sort == 'h_index' %}selected{% endif %}>По h-index</option>
+        <option value="cited"   {% if sort == 'cited'   %}selected{% endif %}>По цитированиям</option>
+        <option value="works"   {% if sort == 'works'   %}selected{% endif %}>По публикациям</option>
+      </select>
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+      <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+        <i class="bi bi-search me-1"></i>Найти
+      </button>
+      {% if query or sort %}
+      <a href="{% url 'universities:list' %}" class="btn btn-outline-secondary btn-sm">Сбросить</a>
+      {% endif %}
+    </div>
+  </div>
+</form>
+
+{% if universities %}
+  <div class="row g-3">
+    {% for uni in universities %}
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          {% if uni.photo %}
+            <img src="{{ uni.photo.url }}"
+                alt="{{ uni.name }}"
+                class="rounded-3 mb-3 w-100"
+                style="height: 180px; object-fit: cover;">
+          {% endif %}
+          <h5 class="mb-1">
+            <a href="{% url 'universities:detail' uni.pk %}" class="text-decoration-none text-dark">
+              {{ uni.name }}
+            </a>
+          </h5>
+          <div class="text-muted small mb-2">
+            <i class="bi bi-geo-alt me-1"></i>{{ uni.city }}
+          </div>
+          <p class="text-muted mb-3">{{ uni.description }}</p>
+          {% if uni.works_count or uni.cited_by_count or uni.h_index %}
+          <div class="d-flex flex-wrap gap-3 mb-3 small text-muted">
+            {% if uni.works_count %}
+            <span title="Научных публикаций">
+              <i class="bi bi-journal-text text-primary me-1"></i>{{ uni.works_count|floatformat:0 }} публ.
+            </span>
+            {% endif %}
+            {% if uni.cited_by_count %}
+            <span title="Цитирований">
+              <i class="bi bi-chat-quote text-success me-1"></i>{{ uni.cited_by_count|floatformat:0 }} цит.
+            </span>
+            {% endif %}
+            {% if uni.h_index %}
+            <span title="h-index — насколько часто другие учёные ссылаются на работы этого вуза">
+              <i class="bi bi-bar-chart-fill text-warning me-1"></i>h-index: {{ uni.h_index }}
+            </span>
+            {% endif %}
+          </div>
+          {% endif %}
+          <a href="{% url 'universities:detail' uni.pk %}" class="btn btn-sm btn-outline-primary">
+            Подробнее
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-building fs-1 d-block mb-3"></i>
+    {% if query %}
+      По запросу «{{ query }}» ничего не найдено.
+    {% else %}
+      Университеты не найдены.
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

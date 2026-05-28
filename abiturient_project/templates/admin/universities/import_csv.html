@@ -1,0 +1,130 @@
+{% extends "admin/base_site.html" %}
+{% block title %}Импорт CSV — {{ opts.verbose_name_plural }}{% endblock %}
+
+{% block content %}
+<h1>Импорт университетов из CSV</h1>
+
+<div style="max-width:780px;">
+
+  <!-- Форма загрузки -->
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div style="margin-bottom:16px;">
+      <label for="csv_file" style="display:block; font-weight:bold; margin-bottom:6px;">
+        CSV-файл:
+      </label>
+      <input type="file" name="csv_file" id="csv_file" accept=".csv"
+             style="padding:4px;">
+      <p style="color:#888; font-size:12px; margin:6px 0 0;">
+        Кодировка: <strong>UTF-8</strong>. Разделитель: <strong>запятая</strong>.
+      </p>
+    </div>
+    <div>
+      <input type="submit" value="Загрузить и импортировать"
+             class="button default" style="padding:8px 16px;">
+      <a href="../" style="margin-left:12px;">← Назад к списку</a>
+    </div>
+  </form>
+
+  <hr style="margin:28px 0;">
+
+  <!-- Колонки -->
+  <h2 style="font-size:16px;">Колонки CSV-файла</h2>
+  <p style="color:#555; font-size:13px;">
+    Файл должен содержать заголовки в первой строке. Используемые колонки:
+  </p>
+
+  <h3 style="font-size:14px; margin-bottom:8px;">Новый формат</h3>
+  <table style="width:100%; border-collapse:collapse; font-size:13px; margin-bottom:20px;">
+    <thead>
+      <tr style="background:#f0f0f0;">
+        <th style="border:1px solid #ccc; padding:6px 10px; text-align:left;">Заголовок в файле</th>
+        <th style="border:1px solid #ccc; padding:6px 10px; text-align:left;">Поле в базе</th>
+        <th style="border:1px solid #ccc; padding:6px 10px; text-align:left;">Примечание</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #ccc; padding:6px 10px;"><code>Название</code></td>
+        <td style="border:1px solid #ccc; padding:6px 10px;">Название <span style="color:#c00;">★</span></td>
+        <td style="border:1px solid #ccc; padding:6px 10px;">Основной идентификатор записи</td>
+      </tr>
+      <tr style="background:#fafafa;">
+        <td style="border:1px solid #ccc; padding:6px 10px;"><code>Аббревиатура</code></td>
+        <td style="border:1px solid #ccc; padding:6px 10px; color:#888;">—</td>
+        <td style="border:1px solid #ccc; padding:6px 10px; color:#888;">Игнорируется при импорте</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #ccc; padding:6px 10px;"><code>Регион</code></td>
+        <td style="border:1px solid #ccc; padding:6px 10px;">Регион + Город</td>
+        <td style="border:1px solid #ccc; padding:6px 10px;">Город извлекается автоматически («г. Москва» → «Москва»)</td>
+      </tr>
+      <tr style="background:#fafafa;">
+        <td style="border:1px solid #ccc; padding:6px 10px;"><code>Адрес</code></td>
+        <td style="border:1px solid #ccc; padding:6px 10px;">Адрес</td>
+        <td style="border:1px solid #ccc; padding:6px 10px;">Если город не найден в регионе — ищется в адресе</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #ccc; padding:6px 10px;"><code>Сайт</code></td>
+        <td style="border:1px solid #ccc; padding:6px 10px;">Сайт</td>
+        <td style="border:1px solid #ccc; padding:6px 10px;">https:// добавляется автоматически если отсутствует</td>
+      </tr>
+      <tr style="background:#fafafa;">
+        <td style="border:1px solid #ccc; padding:6px 10px;"><code>Email</code></td>
+        <td style="border:1px solid #ccc; padding:6px 10px;">Email</td>
+        <td style="border:1px solid #ccc; padding:6px 10px;"></td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #ccc; padding:6px 10px;"><code>Телефон</code></td>
+        <td style="border:1px solid #ccc; padding:6px 10px;">Телефон</td>
+        <td style="border:1px solid #ccc; padding:6px 10px;"></td>
+      </tr>
+      <tr style="background:#fafafa;">
+        <td style="border:1px solid #ccc; padding:6px 10px; color:#888;">
+          Тип, Федеральный округ, Руководитель, ОГРН, ИНН, Статус лицензии
+        </td>
+        <td style="border:1px solid #ccc; padding:6px 10px; color:#888;">—</td>
+        <td style="border:1px solid #ccc; padding:6px 10px; color:#888;">Игнорируются при импорте</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <details style="margin-bottom:16px;">
+    <summary style="font-size:14px; cursor:pointer; color:#555;">Старый формат (Рособрнадзор) — также поддерживается</summary>
+    <table style="width:100%; border-collapse:collapse; font-size:13px; margin-top:8px;">
+      <tbody>
+        <tr>
+          <td style="border:1px solid #ccc; padding:6px 10px;"><code>Название (краткое)</code></td>
+          <td style="border:1px solid #ccc; padding:6px 10px;">Название <span style="color:#c00;">★</span></td>
+          <td style="border:1px solid #ccc; padding:6px 10px;">Ключевое поле. Если пусто — берётся полное</td>
+        </tr>
+        <tr style="background:#fafafa;">
+          <td style="border:1px solid #ccc; padding:6px 10px;"><code>Название (полное)</code></td>
+          <td style="border:1px solid #ccc; padding:6px 10px;">Полное название</td>
+          <td style="border:1px solid #ccc; padding:6px 10px;">Официальное наименование</td>
+        </tr>
+      </tbody>
+    </table>
+  </details>
+
+  <p style="margin-top:8px; font-size:12px; color:#888;">
+    <span style="color:#c00;">★</span> — обязательное поле
+  </p>
+
+  <!-- Поведение при дублях -->
+  <h2 style="font-size:16px; margin-top:24px;">Логика при повторном импорте</h2>
+  <ul style="font-size:13px; color:#555; line-height:1.8;">
+    <li>Если университет с таким названием <strong>уже есть</strong> в базе — его данные <strong>обновляются</strong>.</li>
+    <li>Если <strong>не найден</strong> — создаётся новая запись.</li>
+    <li>Поля <code>has_dormitory</code>, <code>has_military</code>, <code>photo</code>, <code>description</code> при импорте <strong>не затрагиваются</strong>.</li>
+  </ul>
+
+  <!-- Пример -->
+  <h2 style="font-size:16px; margin-top:24px;">Пример файла (новый формат)</h2>
+  <pre style="background:#f7f7f7; border:1px solid #ddd; padding:12px; font-size:11px;
+              overflow-x:auto; border-radius:4px; white-space:pre;">Название,Аббревиатура,Тип,Сайт,Email,Телефон,Адрес,Регион,...
+Московский государственный университет имени М.В.Ломоносова,МГУ,головной,www.msu.ru,info@rector.msu.ru,(495) 939-10-00,"119991, г. Москва, Ленинские горы, д. 1",г. Москва,...
+Высшая школа экономики,ВШЭ,головной,http://www.hse.ru,hse@hse.ru,(495) 772-95-90,"101000, г. Москва, ул. Мясницкая, д. 20",г. Москва,...</pre>
+
+</div>
+{% endblock %}

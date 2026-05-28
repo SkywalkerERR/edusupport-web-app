@@ -1,0 +1,214 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Помощник Абитуриенту{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{% static 'css/main.css' %}" rel="stylesheet">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+  <div class="container">
+    <a class="navbar-brand" href="{% url 'core:home' %}">
+      🎓 <span>Помощник</span> Абитуриенту
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.app_name == 'programs' and request.resolver_match.url_name == 'list' %}active{% endif %}"
+             href="{% url 'programs:list' %}">Все программы</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'calculator' %}active{% endif %}"
+             href="{% url 'programs:calculator' %}">Подбор по баллам</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.app_name == 'universities' %}active{% endif %}"
+             href="{% url 'universities:list' %}">Университеты</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'guide' %}active{% endif %}"
+             href="{% url 'core:guide' %}">Справочник</a>
+        </li>
+      </ul>
+      <ul class="navbar-nav">
+        {% if user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link {% if request.resolver_match.url_name == 'favorites' %}active{% endif %}"
+               href="{% url 'users:favorites' %}">
+              <i class="bi bi-heart"></i> Избранное
+            </a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+              <i class="bi bi-person-circle"></i> {{ user.username }}
+              {% if user.is_superuser %}
+                <span class="badge bg-danger ms-1" style="font-size: 10px;">Admin</span>
+              {% endif %}
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="{% url 'users:profile' %}">Мой профиль</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <form method="post" action="{% url 'users:logout' %}">
+                  {% csrf_token %}
+                  <button type="submit" class="dropdown-item text-danger">Выйти</button>
+                </form>
+              </li>
+            </ul>
+          </li>
+        {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'users:login' %}">Войти</a>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-primary btn-sm ms-2 mt-1" href="{% url 'users:register' %}">Регистрация</a>
+          </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+
+
+
+<main class="container my-4 flex-grow-1">
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="py-4 bg-white mt-auto">
+  <div class="container text-center text-muted small">
+    © 2026 Калинин А.С. - Веб-приложение для абитуриентов
+  </div>
+</footer>
+
+<!-- Toast-уведомления -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1060;">
+  {% for message in messages %}
+  <div class="toast align-items-center border-0 show
+              {% if message.tags == 'success' %}bg-success
+              {% elif message.tags == 'error' %}bg-danger
+              {% elif message.tags == 'warning' %}bg-warning
+              {% else %}bg-primary{% endif %}
+              text-white"
+       role="alert" data-bs-autohide="true" data-bs-delay="3500">
+    <div class="d-flex">
+      <div class="toast-body d-flex align-items-center gap-2">
+        <i class="bi
+          {% if message.tags == 'success' %}bi-check-circle-fill
+          {% elif message.tags == 'error' %}bi-x-circle-fill
+          {% elif message.tags == 'warning' %}bi-exclamation-triangle-fill
+          {% else %}bi-info-circle-fill{% endif %}">
+        </i>
+        {{ message }}
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto"
+              data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Плавающая панель сравнения -->
+<div id="compare-bar" class="{% if not compare_count %}d-none{% endif %}"
+     style="position: fixed; bottom: 24px; right: 24px; z-index: 1050;">
+  <a href="{% url 'programs:compare' %}" class="btn btn-primary shadow">
+    <i class="bi bi-sliders me-2"></i>
+    Сравнить (<span id="compare-count">{{ compare_count|default:0 }}</span>)
+  </a>
+</div>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/main.js' %}"></script>
+<script>
+// ── Плавающий AI-чат ──────────────────────────────────────────
+const toggle   = document.getElementById('ai-chat-toggle');
+const box      = document.getElementById('ai-chat-box');
+const closeBtn = document.getElementById('ai-chat-close');
+const messages = document.getElementById('ai-float-messages');
+const input    = document.getElementById('ai-float-input');
+const sendBtn  = document.getElementById('ai-float-send');
+let chatHistory = [];
+let isOpen = false;
+
+function toggleChat() {
+  isOpen = !isOpen;
+  box.classList.toggle('d-none', !isOpen);
+  toggle.innerHTML = isOpen
+    ? '<i class="bi bi-x-lg"></i>'
+    : '<i class="bi bi-chat-dots-fill"></i>';
+  if (isOpen) input.focus();
+}
+
+function addMsg(role, text) {
+  const isUser = role === 'user';
+  const div = document.createElement('div');
+  div.className = 'd-flex ' + (isUser ? 'justify-content-end' : '');
+  div.innerHTML = `
+    <div style="max-width:85%; font-size:13px; line-height:1.6; padding: 10px 12px;
+                border-radius: ${isUser ? '12px 12px 4px 12px' : '12px 12px 12px 4px'};
+                background: ${isUser ? '#6f42c1' : '#fff'};
+                color: ${isUser ? '#fff' : '#212529'};
+                border: ${isUser ? 'none' : '0.5px solid #e9ecef'};">
+      ${text.replace(/\n/g, '<br>')}
+    </div>`;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+async function sendMessage(text) {
+  if (!text.trim() || sendBtn.disabled) return;
+  input.value = '';
+  sendBtn.disabled = true;
+  addMsg('user', text);
+  chatHistory.push({role: 'user', content: text});
+
+  // Индикатор загрузки
+  const typing = document.createElement('div');
+  typing.id = 'ai-typing';
+  typing.className = 'd-flex';
+  typing.innerHTML = `<div style="background:#fff; border:0.5px solid #e9ecef;
+    border-radius:12px 12px 12px 4px; padding:10px 12px; font-size:13px; color:#6c757d;">
+    Думаю...</div>`;
+  messages.appendChild(typing);
+  messages.scrollTop = messages.scrollHeight;
+
+  try {
+    const res = await fetch("{% url 'core:ai_chat' %}", {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+      body: JSON.stringify({message: text, history: chatHistory.slice(-10)})
+    });
+    const data = await res.json();
+    document.getElementById('ai-typing')?.remove();
+    addMsg('assistant', data.reply);
+    chatHistory.push({role: 'assistant', content: data.reply});
+  } catch {
+    document.getElementById('ai-typing')?.remove();
+    addMsg('assistant', 'Ошибка соединения. Попробуйте ещё раз.');
+  }
+  sendBtn.disabled = false;
+  input.focus();
+}
+
+toggle.addEventListener('click', toggleChat);
+closeBtn.addEventListener('click', toggleChat);
+sendBtn.addEventListener('click', () => sendMessage(input.value));
+input.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(input.value); });
+document.querySelectorAll('.ai-quick').forEach(btn => {
+  btn.addEventListener('click', () => sendMessage(btn.dataset.q));
+});
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

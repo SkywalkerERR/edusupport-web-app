@@ -1,0 +1,10 @@
+venv/
+.env
+__pycache__/
+*.pyc
+db.sqlite3
+.idea/
+staticfiles/
+CLAUDE.md
+.claude/
+schema.dot

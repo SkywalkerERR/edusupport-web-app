@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+{% block title %}Главная — ЮУрГУ Абитуриенту{% endblock %}
+
+{% block content %}
+
+<!-- Герой -->
+<div class="p-5 mb-4 rounded-4 text-white" style="background: linear-gradient(135deg, #6f42c1, #4a90d9);">
+  <h1 class="fw-semibold">Добро пожаловать Абитуриент!</h1>
+  <p class="lead mb-4">Найди свою программу, рассчитай шансы поступления и получи ответы на вопросы</p>
+  <div class="d-flex gap-3 flex-wrap">
+    <a href="{% url 'programs:calculator' %}" class="btn btn-light fw-500">
+      Рассчитать шансы →
+    </a>
+    <a href="{% url 'programs:list' %}" class="btn btn-outline-light">
+      Все программы
+    </a>
+  </div>
+</div>
+
+<!-- Калькулятор ЕГЭ/ОГЭ -->
+<div class="card p-4 mb-4 shadow-sm">
+  <h4 class="fw-bold mb-1">Калькулятор ЕГЭ/ОГЭ</h4>
+  <p class="text-muted small mb-4">Выберите предметы и форму обучения — подберём подходящие программы</p>
+
+  <form method="get" id="ege-home-form">
+    <div class="row g-4 align-items-start">
+
+      <!-- Форма обучения -->
+      <div class="col-md-3">
+        <div class="fw-semibold small mb-2">Форма обучения</div>
+        <div class="d-flex flex-column gap-2">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="study_form"
+                   id="h_sf_all" value="" {% if not study_form %}checked{% endif %}>
+            <label class="form-check-label small" for="h_sf_all">Любая</label>
+          </div>
+          {% for val, label in study_form_choices %}
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="study_form"
+                   id="h_sf_{{ val }}" value="{{ val }}"
+                   {% if study_form == val %}checked{% endif %}>
+            <label class="form-check-label small" for="h_sf_{{ val }}">{{ label }}</label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Предметы ЕГЭ -->
+      <div class="col-md-6">
+        <div class="fw-semibold small mb-2">
+          Предметы ЕГЭ <span class="text-muted fw-normal">(от 1 до 4)</span>
+        </div>
+        <div class="row g-2">
+          {% for slot in "1234" %}
+          <div class="col-6">
+            <select name="s{{ slot }}" class="form-select form-select-sm h-subject-select">
+              <option value="">Выберите предмет</option>
+              {% for subj in all_subjects %}
+                <option value="{{ subj.pk }}"
+                  {% if slot == "1" and s1 == subj.pk|stringformat:"s" %}selected
+                  {% elif slot == "2" and s2 == subj.pk|stringformat:"s" %}selected
+                  {% elif slot == "3" and s3 == subj.pk|stringformat:"s" %}selected
+                  {% elif slot == "4" and s4 == subj.pk|stringformat:"s" %}selected
+                  {% endif %}>{{ subj.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Проходной балл -->
+      <div class="col-md-3" id="h-score-panel"
+           style="{% if subjects_count == 0 %}opacity:0;pointer-events:none;{% endif %}">
+        <div class="fw-semibold small mb-2">Проходной балл</div>
+        <div class="text-muted small mb-1" id="h-range-label">
+          {{ score_min }} — {{ score_max }} проходной балл
+        </div>
+        <input type="range" class="form-range mb-2" id="h-score-slider"
+               name="score" min="{{ score_min }}" max="{{ score_max }}"
+               value="{{ score_val }}" step="1" style="accent-color:#0d6efd;">
+        <div class="text-center small mb-3">
+          Ваш балл: <strong id="h-score-val" class="text-primary">{{ score_val }}</strong>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Подобрать</button>
+      </div>
+
+    </div>
+
+    <!-- Кнопка без слайдера -->
+    <div class="mt-3 d-flex gap-2">
+      <button type="submit" id="h-btn-alt" class="btn btn-primary btn-sm"
+              {% if subjects_count > 0 %}style="display:none"{% endif %}>
+        <i class="bi bi-search me-1"></i>Найти программы
+      </button>
+      {% if searched %}
+      <a href="{% url 'core:home' %}" class="btn btn-outline-secondary btn-sm">Сбросить</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <!-- Пояснение -->
+  {% if not searched %}
+  <div class="mt-3 text-muted small" style="line-height:1.7;">
+    Поиск специальностей по предметам ЕГЭ. Выбирайте список ЕГЭ так, чтобы они требовались
+    для поступления именно в таком количестве и составе. Обычно для поступления требуется
+    три экзамена ЕГЭ, но может быть от двух до четырёх.
+  </div>
+  {% endif %}
+
+  <!-- Результаты -->
+  {% if searched %}
+    {% if ege_programs %}
+    <hr class="mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="fw-semibold">Найдено программ: {{ ege_programs|length }}</div>
+      {% if subjects_count > 0 %}
+      <span class="text-muted small">Ваш балл: <strong class="text-primary">{{ score_val }}</strong> из {{ score_max }}</span>
+      {% endif %}
+    </div>
+    <div class="row g-3">
+      {% for program in ege_programs %}
+      <div class="col-12">
+        <div class="card border">
+          <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+              <div>
+                <div class="fw-semibold">
+                  <a href="{% url 'programs:detail' program.pk %}" class="text-decoration-none text-dark">
+                    {{ program.name }}
+                  </a>
+                </div>
+                <div class="text-muted small">
+                  <a href="{% url 'universities:detail' program.university.pk %}"
+                     class="text-decoration-none text-muted">{{ program.university.name }}</a>
+                  · {{ program.university.city }}
+                </div>
+                <div class="d-flex gap-2 mt-1 flex-wrap">
+                  <span class="program-meta-card degree">
+                    <i class="bi bi-mortarboard-fill"></i>{{ program.get_degree_display }}
+                  </span>
+                  <span class="program-meta-card study-form">
+                    <i class="bi bi-clock-fill"></i>{{ program.get_study_form_display }}
+                  </span>
+                </div>
+              </div>
+              <span class="badge bg-primary">{{ program.profile }}</span>
+            </div>
+            <div class="row g-2 mt-2 text-center">
+              <div class="col-6 col-md-3">
+                <div class="small text-muted">Мин. балл от</div>
+                <div class="fw-semibold">{{ program.min_score }}</div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="small text-muted">Бюджетных мест</div>
+                <div class="fw-semibold text-success">{{ program.budget_places }}</div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="small text-muted">Стоимость/год</div>
+                <div class="fw-semibold">{{ program.cost_per_year|floatformat:0 }} ₽</div>
+              </div>
+              <div class="col-6 col-md-3">
+                <div class="small text-muted">Срок обучения</div>
+                <div class="fw-semibold">{{ program.years }} г.</div>
+              </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
+              <div class="d-flex flex-wrap gap-1">
+                {% for subject in program.subjects.all %}
+                  <span class="badge {% if subject.pk in selected_ids %}bg-primary{% else %}bg-light text-secondary border{% endif %}">
+                    {{ subject.name }}
+                  </span>
+                {% endfor %}
+              </div>
+              <a href="{% url 'programs:detail' program.pk %}" class="btn btn-sm btn-outline-primary">
+                Подробнее
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-4 text-muted mt-3">
+      <i class="bi bi-search fs-1 d-block mb-2"></i>
+      <div class="fw-semibold">Программы не найдены</div>
+      <div class="small">Попробуйте выбрать меньше предметов или повысить балл на слайдере.</div>
+    </div>
+    {% endif %}
+  {% endif %}
+</div>
+
+<!-- Метрики -->
+<div class="row g-3 mb-4">
+  {% for stat in stats %}
+  <div class="col-6 col-md-3">
+    <div class="card text-center p-3 h-100">
+      <div class="fs-3 fw-semibold text-primary">{{ stat.value }}</div>
+      <div class="text-muted small mt-1">{{ stat.label }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="row g-4">
+
+  <!-- Ключевые даты -->
+  <div class="col-md-7">
+    <div class="card h-100">
+      <div class="card-header bg-white fw-semibold py-3">
+        <i class="bi bi-calendar3 text-primary me-2"></i>Ключевые даты приёмной кампании
+      </div>
+      <div class="list-group list-group-flush">
+        {% for d in deadlines %}
+        <div class="list-group-item d-flex align-items-center gap-3 py-3">
+          <span class="text-primary fw-semibold" style="min-width:90px;">{{ d.date }}</span>
+          <span>{{ d.event }}</span>
+          {% if forloop.first %}
+            <span class="badge bg-warning text-dark ms-auto">Скоро</span>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="col-md-5">
+    <div class="card h-100">
+      <div class="card-header bg-white fw-semibold py-3">
+        <i class="bi bi-question-circle text-primary me-2"></i>Частые вопросы
+      </div>
+      <div class="card-body">
+        <div class="accordion accordion-flush" id="faqAccordion">
+          {% for item in faq %}
+          <div class="accordion-item border-bottom">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed px-0 fw-normal" type="button"
+                      data-bs-toggle="collapse" data-bs-target="#faq{{ forloop.counter }}">
+                {{ item.q }}
+              </button>
+            </h2>
+            <div id="faq{{ forloop.counter }}" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body px-0 text-muted">{{ item.a }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  function calcRange(n) {
+    if (n === 0) return { min: 40, max: 100 };
+    return { min: 40 + 39 * (n - 1), max: 100 * n };
+  }
+
+  const selects    = document.querySelectorAll('.h-subject-select');
+  const panel      = document.getElementById('h-score-panel');
+  const slider     = document.getElementById('h-score-slider');
+  const rangeLabel = document.getElementById('h-range-label');
+  const scoreVal   = document.getElementById('h-score-val');
+  const btnAlt     = document.getElementById('h-btn-alt');
+
+  function countSelected() {
+    let c = 0;
+    selects.forEach(s => { if (s.value) c++; });
+    return c;
+  }
+
+  function updatePanel() {
+    const n = countSelected();
+    const { min, max } = calcRange(n);
+    if (n > 0) {
+      panel.style.opacity = '1';
+      panel.style.pointerEvents = 'auto';
+      btnAlt.style.display = 'none';
+      slider.min = min;
+      slider.max = max;
+      const cur = parseInt(slider.value, 10);
+      if (cur < min || cur > max || isNaN(cur)) slider.value = max;
+      rangeLabel.textContent = min + ' — ' + max + ' проходной балл';
+      scoreVal.textContent = slider.value;
+    } else {
+      panel.style.opacity = '0';
+      panel.style.pointerEvents = 'none';
+      btnAlt.style.display = 'inline-block';
+    }
+  }
+
+  slider.addEventListener('input', function () { scoreVal.textContent = this.value; });
+  selects.forEach(s => s.addEventListener('change', updatePanel));
+  updatePanel();
+})();
+</script>
+{% endblock %}

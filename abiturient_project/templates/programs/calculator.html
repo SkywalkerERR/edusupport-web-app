@@ -1,0 +1,392 @@
+{% extends 'base.html' %}
+{% block title %}Подбор программ — ЮУрГУ{% endblock %}
+
+{% block content %}
+<h2 class="fw-semibold mb-1">Подбор образовательных программ</h2>
+<p class="text-muted mb-4">Программы подобраны на основе ваших баллов ЕГЭ из профиля</p>
+
+{% if not user.is_authenticated %}
+  <div class="alert alert-warning d-flex align-items-center gap-3">
+    <i class="bi bi-exclamation-triangle fs-4"></i>
+    <div>
+      Чтобы использовать подбор, нужно
+      <a href="{% url 'users:login' %}?next={% url 'programs:calculator' %}">войти</a>
+      и ввести баллы ЕГЭ в профиле.
+    </div>
+  </div>
+
+{% elif not matched and chance_filter == 'all' and not university_id and not min_score_filter %}
+  <div class="alert alert-info d-flex align-items-center gap-3">
+    <i class="bi bi-info-circle fs-4"></i>
+    <div>
+      Вы ещё не ввели баллы ЕГЭ.
+      <a href="{% url 'users:profile' %}">Перейдите в профиль</a> и добавьте результаты.
+    </div>
+  </div>
+
+{% else %}
+
+  <!-- Сумма баллов -->
+  <div class="card mb-4 p-3">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <div>
+        <div class="small text-muted mb-1">Ваша сумма баллов ЕГЭ</div>
+        <span class="fw-semibold fs-3
+          {% if total_user_score >= 240 %}text-success
+          {% elif total_user_score >= 180 %}text-warning
+          {% elif total_user_score > 0 %}text-danger
+          {% else %}text-muted{% endif %}">
+          {{ total_user_score }}
+        </span>
+      </div>
+      <div class="vr d-none d-md-block"></div>
+      <div class="small text-muted">
+        <i class="bi bi-info-circle me-1"></i>
+        Баллы вводятся в <a href="{% url 'users:profile' %}">профиле</a>.
+        Подбор учитывает предметы каждой программы отдельно.
+      </div>
+      <a href="{% url 'users:profile' %}" class="btn btn-sm btn-outline-primary ms-auto">
+        <i class="bi bi-pencil me-1"></i>Изменить баллы
+      </a>
+    </div>
+  </div>
+
+  <!-- Пояснения к шансам -->
+  <div class="card mb-4">
+    <div class="card-header bg-white py-3" style="cursor:pointer;"
+         data-bs-toggle="collapse" data-bs-target="#chanceInfo">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="fw-semibold">
+          <i class="bi bi-question-circle text-primary me-2"></i>Как формируются шансы поступления?
+        </div>
+        <i class="bi bi-chevron-down text-muted"></i>
+      </div>
+    </div>
+    <div id="chanceInfo" class="collapse">
+      <div class="card-body">
+        <div class="mb-4">
+          <div class="fw-semibold mb-2">Логика расчёта</div>
+          <p class="text-muted small mb-2">
+            Система суммирует ваши баллы ЕГЭ по предметам, которые требуются для конкретной программы,
+            и сравнивает полученную сумму с минимальным проходным баллом прошлого года.
+          </p>
+          <div class="p-3 rounded-3 small" style="background:#f8f9fa; font-family: monospace;">
+            Ваш балл = сумма баллов по нужным предметам программы<br>
+            Запас = Ваш балл − Минимальный проходной балл
+          </div>
+          <div class="alert alert-warning small mt-3 mb-0">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Проходной балл меняется каждый год в зависимости от конкурса.
+            Данные основаны на прошлогодней приёмной кампании и носят ориентировочный характер.
+          </div>
+        </div>
+        <div class="fw-semibold mb-3">Уровни шансов</div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="p-3 rounded-3 h-100" style="background:#e1f5ee; border:1px solid #9fe1cb;">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="chance-badge chance-success">Высокие шансы</span>
+              </div>
+              <div class="small" style="color:#0f6e56;">
+                Ваш балл превышает минимальный проходной на <strong>30 и более баллов</strong>.
+                Вероятность поступления очень высокая — вы уверенно в зоне зачисления.
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 rounded-3 h-100" style="background:#eaf3de; border:1px solid #c0dd97;">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="chance-badge chance-good">Хорошие шансы</span>
+              </div>
+              <div class="small" style="color:#3b6d11;">
+                Запас составляет <strong>от 10 до 29 баллов</strong>.
+                Шансы хорошие, но стоит следить за конкурсными списками после их публикации.
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 rounded-3 h-100" style="background:#faeeda; border:1px solid #fac775;">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="chance-badge chance-warning">Средние шансы</span>
+              </div>
+              <div class="small" style="color:#ba7517;">
+                Ваш балл выше минимального, но запас <strong>менее 10 баллов</strong>.
+                Поступление возможно, однако конкуренция высокая — рекомендуем подать и на другие программы.
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 rounded-3 h-100" style="background:#faece7; border:1px solid #f0997b;">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="chance-badge chance-danger">Низкие шансы</span>
+              </div>
+              <div class="small" style="color:#993c1d;">
+                Ваш балл ниже минимального проходного на <strong>до 20 баллов</strong>.
+                Поступление маловероятно, но возможно при снижении конкурса в текущем году.
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="p-3 rounded-3 h-100" style="background:#fcebeb; border:1px solid #f09595;">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="chance-badge chance-fail">Не проходите</span>
+              </div>
+              <div class="small" style="color:#a32d2d;">
+                Разрыв составляет <strong>более 20 баллов</strong>.
+                Поступление крайне маловероятно. Рассмотрите программы с более низким проходным баллом.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Панель фильтров -->
+  <form method="get" class="card mb-4 p-3">
+
+    <!-- Строка 1 -->
+    <div class="row g-3 mb-3">
+      <div class="col-md-4">
+        <label class="form-label small text-muted mb-1 fw-semibold">Шансы поступления</label>
+        <select name="chance" class="form-select form-select-sm">
+          <option value="all"      {% if chance_filter == 'all'      %}selected{% endif %}>Все программы</option>
+          <option value="possible" {% if chance_filter == 'possible' %}selected{% endif %}>Есть шансы</option>
+          <option value="high"     {% if chance_filter == 'high'     %}selected{% endif %}>Только высокие шансы</option>
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small text-muted mb-1">Университет</label>
+        <select name="university" class="form-select form-select-sm">
+          <option value="">Все университеты</option>
+          {% for uni in universities %}
+            <option value="{{ uni.pk }}" {% if university_id == uni.pk|stringformat:"s" %}selected{% endif %}>
+              {{ uni.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small text-muted mb-1">Сортировка</label>
+        <select name="sort" class="form-select form-select-sm">
+          <option value="chance"    {% if sort == 'chance'    %}selected{% endif %}>По шансам</option>
+          <option value="score"     {% if sort == 'score'     %}selected{% endif %}>По вашему баллу</option>
+          <option value="cost"      {% if sort == 'cost'      %}selected{% endif %}>По стоимости</option>
+          <option value="budget"    {% if sort == 'budget'    %}selected{% endif %}>По бюдж. местам</option>
+          <option value="min_score" {% if sort == 'min_score' %}selected{% endif %}>По проходному баллу</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Строка 2 -->
+    <div class="row g-3 mb-3">
+      <div class="col-md-4">
+        <label class="form-label small text-muted mb-1">Проходной балл (от — до)</label>
+        <div class="d-flex gap-1 align-items-center">
+          <input type="number" name="min_score" value="{{ min_score_filter|default:'' }}"
+                 min="100" max="320" placeholder="от" class="form-control form-control-sm">
+          <span class="text-muted">—</span>
+          <input type="number" name="max_score" value="{{ max_score_filter|default:'' }}"
+                 min="100" max="320" placeholder="до" class="form-control form-control-sm">
+        </div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small text-muted mb-1">Бюджетных мест от</label>
+        <input type="number" name="min_budget" value="{{ min_budget|default:'' }}"
+               min="0" placeholder="например 10" class="form-control form-control-sm">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small text-muted mb-1">Инфраструктура</label>
+        <div class="d-flex gap-4 mt-1">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="has_dormitory"
+                   id="has_dormitory" value="1" {% if has_dormitory %}checked{% endif %}>
+            <label class="form-check-label small" for="has_dormitory">
+              <i class="bi bi-house-door me-1"></i>Общежитие
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="has_military"
+                   id="has_military" value="1" {% if has_military %}checked{% endif %}>
+            <label class="form-check-label small" for="has_military">
+              <i class="bi bi-shield me-1"></i>Воен. кафедра
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Кнопки -->
+    <div class="d-flex gap-2 mb-3">
+      <button type="submit" class="btn btn-primary btn-sm">
+        <i class="bi bi-funnel me-1"></i>Применить фильтры
+      </button>
+      <a href="{% url 'programs:calculator' %}" class="btn btn-outline-secondary btn-sm">
+        Сбросить
+      </a>
+    </div>
+
+    <!-- Совет -->
+    <div class="p-3 rounded-3 small text-muted" style="background:#f8f9fa;">
+      <i class="bi bi-lightbulb text-warning me-2"></i>
+      <strong>Совет:</strong> используйте фильтр «Высокие шансы» чтобы сразу видеть программы
+      где вы уверенно проходите, и «Есть шансы» для расширенного списка вариантов.
+    </div>
+
+  </form>
+
+  <!-- Счётчик результатов -->
+  <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
+    <span class="text-muted small">Найдено программ: <strong>{{ matched|length }}</strong></span>
+    {% if chance_filter == 'high' %}
+      <span class="badge bg-success">только высокие шансы</span>
+    {% elif chance_filter == 'possible' %}
+      <span class="badge bg-warning text-dark">есть шансы</span>
+    {% endif %}
+    {% if university_id %}
+      <span class="badge bg-primary">фильтр по вузу</span>
+    {% endif %}
+    {% if min_score_filter or max_score_filter %}
+      <span class="badge bg-secondary">фильтр по баллу</span>
+    {% endif %}
+    {% if min_budget %}
+      <span class="badge bg-secondary">мест от {{ min_budget }}</span>
+    {% endif %}
+    {% if has_dormitory %}
+      <span class="badge bg-success">есть общежитие</span>
+    {% endif %}
+    {% if has_military %}
+      <span class="badge bg-danger">есть воен. кафедра</span>
+    {% endif %}
+  </div>
+
+  {% if matched %}
+  <div class="row g-3">
+    {% for item in matched %}
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+            <div>
+              <h5 class="mb-1">
+                <a href="{% url 'programs:detail' item.program.pk %}"
+                   class="text-decoration-none text-dark">
+                  {{ item.program.name }}
+                </a>
+              </h5>
+              <div class="text-muted small">
+                {{ item.program.university.name }} · {{ item.program.faculty }}
+              </div>
+              <div class="d-flex gap-2 mt-1 flex-wrap">
+                <span class="program-meta-card degree">
+                  <i class="bi bi-mortarboard-fill"></i>{{ item.program.get_degree_display }}
+                </span>
+                <span class="program-meta-card study-form">
+                  <i class="bi bi-clock-fill"></i>{{ item.program.get_study_form_display }}
+                </span>
+                {% if item.program.university.has_dormitory %}
+                <span class="program-meta-card"
+                      style="background:#e6f1fb; color:#185fa5; border-color:#85b7eb;">
+                  <i class="bi bi-house-door-fill"></i>Общежитие
+                </span>
+                {% endif %}
+                {% if item.program.university.has_military %}
+                <span class="program-meta-card"
+                      style="background:#fcebeb; color:#a32d2d; border-color:#f09595;">
+                  <i class="bi bi-shield-fill"></i>Воен. кафедра
+                </span>
+                {% endif %}
+              </div>
+            </div>
+            {% if item.chance %}
+            <span class="chance-badge chance-{{ item.chance.css }}">
+              {{ item.chance.label }}
+            </span>
+            {% endif %}
+          </div>
+
+          {% if item.chance %}
+          <div class="progress mb-3" style="height: 8px;">
+            <div class="progress-bar" role="progressbar"
+                 style="width: {{ item.chance.pct }}%;"
+                 aria-valuenow="{{ item.chance.pct }}"
+                 aria-valuemin="0" aria-valuemax="100">
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="d-flex flex-wrap gap-3 mt-2" style="font-size: 13px;">
+            <div><span class="text-muted">Ваш балл: </span><strong>{{ item.user_total }}</strong></div>
+            <div><span class="text-muted">Мин. проходной от </span><strong>{{ item.program.min_score }}</strong></div>
+            <div><span class="text-muted">Бюдж. мест: </span><strong class="text-success">{{ item.program.budget_places }}</strong></div>
+            <div><span class="text-muted">Стоимость: </span><strong>{{ item.program.cost_per_year|floatformat:0 }} ₽/год</strong></div>
+            <div>
+              <span class="text-muted">{% if item.gap >= 0 %}Запас:{% else %}Не хватает:{% endif %} </span>
+              <strong class="{% if item.gap >= 0 %}text-success{% else %}text-danger{% endif %}">
+                {% if item.gap >= 0 %}+{% endif %}{{ item.gap }} б.
+              </strong>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-3">
+            <a href="{% url 'programs:detail' item.program.pk %}"
+               class="btn btn-sm btn-outline-primary">Подробнее</a>
+            <button class="btn btn-sm btn-outline-secondary cmp-btn"
+                    data-id="{{ item.program.pk }}"
+                    data-url="{% url 'programs:compare_toggle' %}">
+              <i class="bi bi-sliders me-1"></i><span>Сравнить</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-funnel fs-1 d-block mb-3"></i>
+    <div class="fw-semibold mb-2">Программы не найдены</div>
+    <div class="mb-3">Попробуйте изменить фильтры</div>
+    <a href="{% url 'programs:calculator' %}" class="btn btn-outline-primary btn-sm">
+      Сбросить все фильтры
+    </a>
+  </div>
+  {% endif %}
+
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const compareBar = document.getElementById('compare-bar');
+const compareCount = document.getElementById('compare-count');
+
+document.querySelectorAll('.cmp-btn').forEach(btn => {
+  btn.addEventListener('click', function () {
+    const fd = new FormData();
+    fd.append('program_id', this.dataset.id);
+    fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    fetch(this.dataset.url, {method: 'POST', body: fd})
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === 'limit') {
+          alert('Можно сравнивать не более 3 программ');
+          return;
+        }
+        const span = this.querySelector('span');
+        if (data.status === 'added') {
+          span.textContent = 'Убрать';
+          this.classList.replace('btn-outline-secondary', 'btn-secondary');
+        } else {
+          span.textContent = 'Сравнить';
+          this.classList.replace('btn-secondary', 'btn-outline-secondary');
+        }
+        compareCount.textContent = data.count;
+        compareBar.classList.toggle('d-none', data.count === 0);
+      });
+  });
+});
+</script>
+{% endblock %}

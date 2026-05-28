@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+{% block title %}{{ university.name }} — ЮУрГУ{% endblock %}
+
+{% block content %}
+
+<!-- Шапка -->
+<div class="card mb-4">
+  <div class="card-body">
+    {% if university.photo %}
+      <img src="{{ university.photo.url }}"
+          alt="{{ university.name }}"
+          class="w-100 rounded-3 mb-4"
+          style="height: 260px; object-fit: cover;">
+    {% endif %}
+    <h2 class="fw-semibold mb-1">{{ university.name }}</h2>
+    <div class="text-muted mb-3">
+      <i class="bi bi-geo-alt me-1"></i>{{ university.city }}
+    </div>
+    <p class="mb-0">{{ university.description }}</p>
+  </div>
+</div>
+
+<div class="card mb-4" id="deadlines">
+  <div class="card-header bg-white fw-semibold py-3">
+    <i class="bi bi-calendar3 text-primary me-2"></i>
+    Сроки приёмной кампании 2026
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th style="width: 25%;">Дата</th>
+          <th>Событие</th>
+          <th style="width: 15%;" class="text-end">Тип</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% if deadlines %}
+          {% for d in deadlines %}
+          <tr>
+            <td class="fw-semibold text-primary">{{ d.date }}</td>
+            <td>{{ d.event }}</td>
+            <td class="text-end">
+              <span class="badge bg-light text-secondary border small">
+                {{ d.type }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="3" class="text-center text-muted py-4">
+              <i class="bi bi-calendar-x d-block mb-2 fs-4"></i>
+              Сроки приёмной кампании пока не добавлены
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+
+    </table>
+  </div>
+</div>
+
+<!-- Контакты и расположение -->
+{% if university.region or university.address or university.website or university.email or university.phone %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h6 class="fw-semibold mb-3 text-muted text-uppercase" style="font-size:0.75rem; letter-spacing:.05em;">
+      Контакты и расположение
+    </h6>
+    <div class="row g-2" style="font-size:0.9rem;">
+
+      {% if university.region %}
+      <div class="col-12 col-md-6 d-flex gap-2">
+        <i class="bi bi-map text-muted mt-1" style="flex-shrink:0;"></i>
+        <div>
+          <div class="text-muted small">Регион</div>
+          <div>{{ university.region }}</div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if university.address %}
+      <div class="col-12 col-md-6 d-flex gap-2">
+        <i class="bi bi-geo-alt text-muted mt-1" style="flex-shrink:0;"></i>
+        <div>
+          <div class="text-muted small">Адрес</div>
+          <div>{{ university.address }}</div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if university.website %}
+      <div class="col-12 col-md-6 d-flex gap-2">
+        <i class="bi bi-globe text-muted mt-1" style="flex-shrink:0;"></i>
+        <div>
+          <div class="text-muted small">Сайт</div>
+          <a href="{{ university.website }}" target="_blank" rel="noopener">{{ university.website }}</a>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if university.email %}
+      <div class="col-12 col-md-6 d-flex gap-2">
+        <i class="bi bi-envelope text-muted mt-1" style="flex-shrink:0;"></i>
+        <div>
+          <div class="text-muted small">Email</div>
+          <a href="mailto:{{ university.email }}">{{ university.email }}</a>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if university.phone %}
+      <div class="col-12 col-md-6 d-flex gap-2">
+        <i class="bi bi-telephone text-muted mt-1" style="flex-shrink:0;"></i>
+        <div>
+          <div class="text-muted small">Телефон</div>
+          <a href="tel:{{ university.phone }}">{{ university.phone }}</a>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Научная активность -->
+{% if university.works_count or university.cited_by_count or university.h_index %}
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h6 class="fw-semibold mb-0 text-uppercase text-muted" style="font-size:0.75rem; letter-spacing:.05em;">
+        Научная активность
+      </h6>
+      <span class="text-muted" style="font-size:0.72rem;">
+        <i class="bi bi-info-circle me-1"></i>данные OpenAlex
+      </span>
+    </div>
+    <div class="row g-3 text-center">
+      {% if university.works_count %}
+      <div class="col-4">
+        <div class="fs-3 fw-semibold text-primary">{{ university.works_count|floatformat:0 }}</div>
+        <div class="small text-muted">публикаций</div>
+        <div class="text-muted" style="font-size:0.7rem;">научных работ</div>
+      </div>
+      {% endif %}
+      {% if university.cited_by_count %}
+      <div class="col-4">
+        <div class="fs-3 fw-semibold text-success">{{ university.cited_by_count|floatformat:0 }}</div>
+        <div class="small text-muted">цитирований</div>
+        <div class="text-muted" style="font-size:0.7rem;">другими авторами</div>
+      </div>
+      {% endif %}
+      {% if university.h_index %}
+      <div class="col-4">
+        <div class="fs-3 fw-semibold text-warning">{{ university.h_index }}</div>
+        <div class="small text-muted">h-index</div>
+        <div class="text-muted" style="font-size:0.7rem;">h-index</div>
+      </div>
+      {% endif %}
+    </div>
+    <p class="text-muted mb-0 mt-3" style="font-size:0.75rem; border-top:1px solid #eee; padding-top:0.75rem;">
+      <i class="bi bi-lightbulb me-1"></i>
+      Чем выше показатели — тем сильнее научная репутация вуза в мире.
+      <strong>h-index (h-index {{ university.h_index }})</strong> —
+      насколько часто другие учёные мира ссылаются на работы этого университета.
+      Чем выше значение, тем больше исследователей опираются на науку этого вуза.
+    </p>
+  </div>
+</div>
+{% endif %}
+
+<!-- Статистика ВУЗа -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card h-100">
+      <div class="card-body text-center py-3">
+        <div class="fs-3 fw-semibold text-primary">{{ programs_count }}</div>
+        <div class="small text-muted">программ обучения</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card h-100">
+      <div class="card-body text-center py-3">
+        <div class="fs-3 fw-semibold text-success">{{ stats.total_budget|default:"—" }}</div>
+        <div class="small text-muted">бюджетных мест</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card h-100">
+      <div class="card-body text-center py-3">
+        <div class="fs-3 fw-semibold text-warning">{{ stats.total_paid|default:"—" }}</div>
+        <div class="small text-muted">платных мест</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card h-100">
+      <div class="card-body text-center py-3">
+        {% if stats.min_cost %}
+          <div class="fs-5 fw-semibold text-secondary">от {{ stats.min_cost|floatformat:0 }} ₽</div>
+        {% else %}
+          <div class="fs-5 fw-semibold text-secondary">—</div>
+        {% endif %}
+        <div class="small text-muted">стоимость в год</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Фильтры программ -->
+<h4 class="fw-semibold mb-3">Образовательные программы</h4>
+
+<form method="get" class="card p-3 mb-4">
+  <div class="row g-2 mb-2">
+    <div class="col-md-4">
+      <label class="form-label small text-muted mb-1">Поиск по названию</label>
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm"
+             placeholder="Например: программная инженерия">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label small text-muted mb-1">Профиль</label>
+      <select name="profile" class="form-select form-select-sm">
+        <option value="">Все профили</option>
+        {% for val, label in profiles %}
+          <option value="{{ val }}" {% if profile == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label small text-muted mb-1">Уровень образования</label>
+      <select name="degree" class="form-select form-select-sm">
+        <option value="">Все уровни</option>
+        <option value="bachelor"   {% if degree == 'bachelor'   %}selected{% endif %}>Бакалавриат</option>
+        <option value="master"     {% if degree == 'master'     %}selected{% endif %}>Магистратура</option>
+        <option value="specialist" {% if degree == 'specialist' %}selected{% endif %}>Специалитет</option>
+        <option value="college"    {% if degree == 'college'    %}selected{% endif %}>СПО</option>
+      </select>
+    </div>
+  </div>
+  <div class="row g-2 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label small text-muted mb-1">Форма обучения</label>
+      <select name="study_form" class="form-select form-select-sm">
+        <option value="">Все формы</option>
+        <option value="full_time" {% if study_form == 'full_time' %}selected{% endif %}>Очная</option>
+        <option value="part_time" {% if study_form == 'part_time' %}selected{% endif %}>Заочная</option>
+        <option value="evening"   {% if study_form == 'evening'   %}selected{% endif %}>Очно-заочная</option>
+      </select>
+    </div>
+    <div class="col-md-8 d-flex gap-2 justify-content-md-end align-items-end">
+      <button type="submit" class="btn btn-primary btn-sm">
+        <i class="bi bi-funnel me-1"></i>Применить
+      </button>
+      <a href="{% url 'universities:detail' university.pk %}" class="btn btn-outline-secondary btn-sm">
+        Сбросить
+      </a>
+    </div>
+  </div>
+</form>
+
+{% if programs %}
+  <div class="row g-3">
+    {% for program in programs %}
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+              <h6 class="mb-1">
+                <a href="{% url 'programs:detail' program.pk %}" class="text-decoration-none text-dark">
+                  {{ program.name }}
+                </a>
+              </h6>
+              <div class="text-muted small mb-1">{{ program.code }} · {{ program.faculty }}</div>
+              <div class="d-flex gap-2 mt-1 flex-wrap">
+                <span class="program-meta-card degree">
+                  <i class="bi bi-mortarboard-fill"></i>{{ program.get_degree_display }}
+                </span>
+                <span class="program-meta-card study-form">
+                  <i class="bi bi-clock-fill"></i>{{ program.get_study_form_display }}
+                </span>
+              </div>
+            </div>
+            <span class="badge bg-primary">{{ program.profile }}</span>
+          </div>
+
+          <div class="row g-2 mt-2 text-center">
+            <div class="col-6 col-md-3">
+              <div class="small text-muted">Мин. балл от</div>
+              <div class="fw-semibold">{{ program.min_score }}</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="small text-muted">Бюджетных мест</div>
+              <div class="fw-semibold text-success">{{ program.budget_places }}</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="small text-muted">Стоимость/год</div>
+              <div class="fw-semibold">{{ program.cost_per_year|floatformat:0 }} ₽</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="small text-muted">Срок обучения</div>
+              <div class="fw-semibold">{{ program.years }} г.</div>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between mt-3 flex-wrap gap-2">
+            <div class="d-flex flex-wrap gap-1">
+              {% for subject in program.subjects.all %}
+                <span class="badge bg-light text-secondary border">{{ subject.name }}</span>
+              {% endfor %}
+            </div>
+            <a href="{% url 'programs:detail' program.pk %}" class="btn btn-sm btn-outline-primary">
+              Подробнее
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="text-center py-4 text-muted">
+    <i class="bi bi-journal-x fs-1 d-block mb-2"></i>
+    {% if q or profile or degree or study_form %}
+      По заданным фильтрам программы не найдены.
+    {% else %}
+      Программы не найдены.
+    {% endif %}
+  </div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+{% block title %}Программы — ЮУрГУ{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-semibold mb-0">Образовательные программы</h2>
+  <span class="text-muted">Найдено: {{ page_obj.paginator.count }}</span>
+</div>
+
+<!-- Фильтры -->
+<form method="get" class="card p-3 mb-4">
+  <div class="row g-2 mb-2">
+    <div class="col-md-4">
+      <label class="form-label small text-muted mb-1">Поиск по названию</label>
+      <input type="text" name="q" value="{{ query }}" class="form-control form-control-sm"
+             placeholder="Например: программная инженерия">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label small text-muted mb-1">Университет</label>
+      <select name="university" class="form-select form-select-sm">
+        <option value="">Все университеты</option>
+        {% for uni in universities %}
+          <option value="{{ uni.pk }}" {% if university_id == uni.pk|stringformat:"s" %}selected{% endif %}>
+            {{ uni.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label small text-muted mb-1">Профиль</label>
+      <select name="profile" class="form-select form-select-sm">
+        <option value="">Все профили</option>
+        {% for val, label in profiles %}
+          <option value="{{ val }}" {% if profile == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="row g-2 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label small text-muted mb-1">Уровень образования</label>
+      <select name="degree" class="form-select form-select-sm">
+        <option value="">Все уровни</option>
+        <option value="bachelor"   {% if degree == 'bachelor'   %}selected{% endif %}>Бакалавриат</option>
+        <option value="master"     {% if degree == 'master'     %}selected{% endif %}>Магистратура</option>
+        <option value="specialist" {% if degree == 'specialist' %}selected{% endif %}>Специалитет</option>
+        <option value="college"    {% if degree == 'college'    %}selected{% endif %}>СПО</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small text-muted mb-1">Форма обучения</label>
+      <select name="study_form" class="form-select form-select-sm">
+        <option value="">Все формы</option>
+        <option value="full_time" {% if study_form == 'full_time' %}selected{% endif %}>Очная</option>
+        <option value="part_time" {% if study_form == 'part_time' %}selected{% endif %}>Заочная</option>
+        <option value="evening"   {% if study_form == 'evening'   %}selected{% endif %}>Очно-заочная</option>
+      </select>
+    </div>
+    <div class="col-md-6 d-flex gap-2 justify-content-md-end align-items-end">
+      <button type="submit" class="btn btn-primary btn-sm">
+        <i class="bi bi-funnel me-1"></i>Применить
+      </button>
+      <a href="{% url 'programs:list' %}" class="btn btn-outline-secondary btn-sm">
+        Сбросить
+      </a>
+    </div>
+  </div>
+</form>
+
+<!-- Баннер подбора для авторизованных -->
+{% if user.is_authenticated %}
+<div class="alert mb-4 d-flex align-items-center gap-3"
+     style="background:#f3f0ff; border:0.5px solid #c4b5f5;">
+  <i class="bi bi-stars text-primary fs-5"></i>
+  <div>
+    <span class="fw-semibold">Хотите узнать свои шансы?</span>
+    <span class="text-muted ms-1">Перейдите в</span>
+    <a href="{% url 'programs:calculator' %}" class="ms-1">Подбор по баллам</a>
+    <span class="text-muted ms-1">— система подберёт программы на основе ваших результатов ЕГЭ.</span>
+  </div>
+</div>
+{% endif %}
+
+{% if programs %}
+  <div class="row g-3">
+    {% for program in programs %}
+    <div class="col-12">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+              <h5 class="card-title mb-1">
+                <a href="{% url 'programs:detail' program.pk %}" class="text-decoration-none text-dark">
+                  {{ program.name }}
+                </a>
+              </h5>
+              <div class="text-muted small mb-2">{{ program.code }} · {{ program.faculty }}</div>
+              <div class="d-flex gap-2 flex-wrap">
+                <span class="program-meta-card degree">
+                  <i class="bi bi-mortarboard-fill"></i>{{ program.get_degree_display }}
+                </span>
+                <span class="program-meta-card study-form">
+                  <i class="bi bi-clock-fill"></i>{{ program.get_study_form_display }}
+                </span>
+              </div>
+            </div>
+            <span class="badge bg-primary rounded-pill">{{ program.profile }}</span>
+          </div>
+
+          <div class="row g-3 mt-2 text-center">
+            <div class="col-6 col-md-3">
+              <div class="small text-muted">Мин. балл от</div>
+              <div class="fw-semibold">{{ program.min_score }}</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="small text-muted">Средний балл</div>
+              <div class="fw-semibold">{{ program.avg_score }}</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="small text-muted">Бюджетных мест</div>
+              <div class="fw-semibold text-success">{{ program.budget_places }}</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="small text-muted">Стоимость/год</div>
+              <div class="fw-semibold">{{ program.cost_per_year|floatformat:0 }} ₽</div>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between mt-3 flex-wrap gap-2">
+            <div class="d-flex flex-wrap gap-1">
+              {% for subject in program.subjects.all %}
+                <span class="badge bg-light text-secondary border">{{ subject.name }}</span>
+              {% endfor %}
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-secondary cmp-btn"
+                      data-id="{{ program.pk }}"
+                      data-url="{% url 'programs:compare_toggle' %}">
+                <i class="bi bi-sliders me-1"></i>
+                <span>Сравнить</span>
+              </button>
+              {% if user.is_authenticated %}
+              <button class="btn btn-sm btn-outline-secondary fav-btn"
+                      data-id="{{ program.pk }}"
+                      data-url="{% url 'users:toggle_favorite' %}">
+                <i class="bi {% if program.pk in favorite_ids %}bi-heart-fill text-danger{% else %}bi-heart{% endif %}"></i>
+              </button>
+              {% endif %}
+              <a href="{% url 'programs:detail' program.pk %}" class="btn btn-sm btn-outline-primary">
+                Подробнее
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Пагинация -->
+  {% if page_obj.paginator.num_pages > 1 %}
+  <nav class="mt-4">
+    <ul class="pagination justify-content-center">
+      <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
+        <a class="page-link"
+           href="?page={{ page_obj.previous_page_number }}&q={{ query }}&profile={{ profile }}">
+          &laquo;
+        </a>
+      </li>
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+          <li class="page-item active">
+            <span class="page-link">{{ num }}</span>
+          </li>
+        {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+          <li class="page-item">
+            <a class="page-link"
+               href="?page={{ num }}&q={{ query }}&profile={{ profile }}">
+              {{ num }}
+            </a>
+          </li>
+        {% endif %}
+      {% endfor %}
+      <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
+        <a class="page-link"
+           href="?page={{ page_obj.next_page_number }}&q={{ query }}&profile={{ profile }}">
+          &raquo;
+        </a>
+      </li>
+    </ul>
+    <div class="text-center text-muted small mt-2">
+      Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+    </div>
+  </nav>
+  {% endif %}
+
+{% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-search fs-1 d-block mb-3"></i>
+    Программы не найдены. Попробуйте изменить фильтры.
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Избранное
+document.querySelectorAll('.fav-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    fetch(this.dataset.url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+      body: JSON.stringify({program_id: this.dataset.id})
+    })
+    .then(r => r.json())
+    .then(data => {
+      const icon = this.querySelector('i');
+      icon.className = data.status === 'added' ? 'bi bi-heart-fill text-danger' : 'bi bi-heart';
+    });
+  });
+});
+
+// Сравнение
+const compareBar = document.getElementById('compare-bar');
+const compareCount = document.getElementById('compare-count');
+
+document.querySelectorAll('.cmp-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const fd = new FormData();
+    fd.append('program_id', this.dataset.id);
+    fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    fetch(this.dataset.url, {method: 'POST', body: fd})
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'limit') {
+        alert('Можно сравнивать не более 3 программ');
+        return;
+      }
+      const span = this.querySelector('span');
+      if (data.status === 'added') {
+        span.textContent = 'Убрать';
+        this.classList.replace('btn-outline-secondary', 'btn-secondary');
+      } else {
+        span.textContent = 'Сравнить';
+        this.classList.replace('btn-secondary', 'btn-outline-secondary');
+      }
+      compareCount.textContent = data.count;
+      compareBar.classList.toggle('d-none', data.count === 0);
+    });
+  });
+});
+</script>
+{% endblock %}

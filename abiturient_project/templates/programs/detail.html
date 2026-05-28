@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% block title %}{{ program.name }} — ЮУрГУ{% endblock %}
+
+{% block content %}
+
+<!-- Хлебные крошки -->
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Главная</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'programs:list' %}">Программы</a></li>
+    <li class="breadcrumb-item active">{{ program.name }}</li>
+  </ol>
+</nav>
+
+<div class="row g-4">
+
+  <!-- Левая колонка — основная информация -->
+  <div class="col-lg-8">
+
+    <!-- Шапка программы -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+          <div>
+            <span class="badge bg-primary mb-2">{{ program.profile }}</span>
+            <h2 class="fw-semibold mb-1">{{ program.name }}</h2>
+            <div class="text-muted mb-1">
+              <i class="bi bi-hash me-1"></i>{{ program.code }}
+            </div>
+            <div class="text-muted">
+              <i class="bi bi-building me-1"></i>
+              <a href="{% url 'universities:detail' program.university.pk %}" class="text-decoration-none text-muted">
+                {{ program.university.name }}
+              </a>
+            </div>
+            <div class="text-muted mt-1">
+              <i class="bi bi-door-open me-1"></i>{{ program.faculty }}
+            </div>
+            <div class="d-flex gap-2 mt-2 flex-wrap">
+              <span class="program-meta-card degree">
+                <i class="bi bi-mortarboard-fill"></i>{{ program.get_degree_display }}
+              </span>
+              <span class="program-meta-card study-form">
+                <i class="bi bi-clock-fill"></i>{{ program.get_study_form_display }}
+              </span>
+            </div>
+          </div>
+          {% if user.is_authenticated %}
+          <button class="btn btn-outline-danger fav-btn"
+                  data-id="{{ program.pk }}"
+                  data-url="{% url 'users:toggle_favorite' %}">
+            <i class="bi {% if is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %} me-1"></i>
+            <span>{% if is_favorite %}В избранном{% else %}В избранное{% endif %}</span>
+          </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Описание -->
+    {% if program.description %}
+    <div class="card mb-4">
+      <div class="card-header bg-white fw-semibold py-3">
+        <i class="bi bi-info-circle text-primary me-2"></i>О программе
+      </div>
+      <div class="card-body text-muted" style="line-height: 1.7;">
+        {{ program.description }}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Предметы ЕГЭ -->
+    <div class="card mb-4">
+      <div class="card-header bg-white fw-semibold py-3">
+        <i class="bi bi-journal-check text-primary me-2"></i>Необходимые предметы ЕГЭ
+      </div>
+      <div class="card-body">
+        <div class="d-flex flex-wrap gap-2">
+          {% for subject in program.subjects.all %}
+            <span class="badge bg-light text-dark border fs-6 px-3 py-2">
+              <i class="bi bi-check2 text-success me-1"></i>{{ subject.name }}
+            </span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Шансы поступления (если авторизован и есть баллы) -->
+    {% if chance %}
+    <div class="card mb-4">
+      <div class="card-header bg-white fw-semibold py-3">
+        <i class="bi bi-graph-up text-primary me-2"></i>Ваши шансы поступления
+      </div>
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+          <div>
+            <span class="chance-badge chance-{{ chance.css }} fs-6">{{ chance.label }}</span>
+          </div>
+          <div class="text-muted small">
+            Ваш балл: <strong>{{ user_total }}</strong> ·
+            Мин. проходной от <strong>{{ program.min_score }}</strong>
+          </div>
+        </div>
+        <div class="progress mb-3" style="height: 10px;">
+          <div class="progress-bar chance-{{ chance.css }}"
+               role="progressbar"
+               style="width: {{ chance.pct }}%; background: currentColor;"
+               aria-valuenow="{{ chance.pct }}"
+               aria-valuemin="0" aria-valuemax="100">
+          </div>
+        </div>
+        {% if gap >= 0 %}
+          <div class="text-success small">
+            <i class="bi bi-check-circle me-1"></i>
+            Запас <strong>+{{ gap }} баллов</strong> над минимальным порогом
+          </div>
+        {% else %}
+          <div class="text-danger small">
+            <i class="bi bi-exclamation-circle me-1"></i>
+            Не хватает <strong>{{ gap|slice:"1:" }} баллов</strong> до минимального порога
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    {% elif user.is_authenticated %}
+    <div class="alert alert-info d-flex align-items-center gap-3">
+      <i class="bi bi-info-circle fs-5"></i>
+      <div>
+        Введите баллы ЕГЭ в <a href="{% url 'users:profile' %}">профиле</a>,
+        чтобы узнать свои шансы поступления на эту программу.
+      </div>
+    </div>
+    {% else %}
+    <div class="alert alert-light border d-flex align-items-center gap-3">
+      <i class="bi bi-lock fs-5 text-muted"></i>
+      <div>
+        <a href="{% url 'users:login' %}">Войдите</a> и введите баллы ЕГЭ,
+        чтобы узнать свои шансы поступления.
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Правая колонка — статистика -->
+  <div class="col-lg-4">
+
+    <!-- Ключевые показатели -->
+    <div class="card mb-4">
+      <div class="card-header bg-white fw-semibold py-3">
+        <i class="bi bi-bar-chart text-primary me-2"></i>Ключевые показатели
+      </div>
+      <div class="list-group list-group-flush">
+        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+          <span class="text-muted small">Мин. проходной балл от</span>
+          <span class="fw-semibold">{{ program.min_score }}</span>
+        </div>
+        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+          <span class="text-muted small">Средний балл прошлого года</span>
+          <span class="fw-semibold">{{ program.avg_score }}</span>
+        </div>
+        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+          <span class="text-muted small">Бюджетных мест</span>
+          <span class="fw-semibold text-success">{{ program.budget_places }}</span>
+        </div>
+        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+          <span class="text-muted small">Стоимость обучения/год</span>
+          <span class="fw-semibold">{{ program.cost_per_year|floatformat:0 }} ₽</span>
+        </div>
+        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+          <span class="text-muted small">Срок обучения</span>
+          <span class="fw-semibold">{{ program.years }} года</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Университет -->
+    <div class="card mb-4">
+      <div class="card-header bg-white fw-semibold py-3">
+        <i class="bi bi-building text-primary me-2"></i>Университет
+      </div>
+      <div class="card-body">
+        <div class="fw-semibold mb-1">{{ program.university.name }}</div>
+        <div class="text-muted small mb-3">
+          <i class="bi bi-geo-alt me-1"></i>{{ program.university.city }}
+        </div>
+        <a href="{% url 'universities:detail' program.university.pk %}"
+           class="btn btn-sm btn-outline-primary w-100">
+          Все программы университета
+        </a>
+      </div>
+    </div>
+
+    <!-- Действия -->
+    <div class="card">
+      <div class="card-body d-grid gap-2">
+        <a href="{% url 'programs:calculator' %}" class="btn btn-primary">
+          <i class="bi bi-calculator me-2"></i>Рассчитать шансы
+        </a>
+        <a href="{% url 'programs:list' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left me-2"></i>Все программы
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const favBtn = document.querySelector('.fav-btn');
+if (favBtn) {
+  favBtn.addEventListener('click', function () {
+    fetch(this.dataset.url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({program_id: this.dataset.id})
+    })
+    .then(r => r.json())
+    .then(data => {
+      const icon = this.querySelector('i');
+      if (data.status === 'added') {
+        icon.className = 'bi bi-heart-fill text-danger';
+        showToast('Добавлено в избранное', 'success');
+      } else {
+        icon.className = 'bi bi-heart';
+        showToast('Удалено из избранного', 'info');
+      }
+    });
+  });
+}
+</script>
+{% endblock %}
