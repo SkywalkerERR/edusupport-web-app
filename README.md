@@ -100,7 +100,6 @@ python manage.py import_universities vuz_contacts_test.csv
 # С флагами:
 python manage.py import_universities vuz_contacts_test.csv --update    # обновить существующие
 python manage.py import_universities vuz_contacts_test.csv --dry-run   # проверка без записи
-python manage.py import_universities vuz_contacts_test.csv --encoding cp1251
 ```
 
 Также доступен импорт через **Admin → Университеты → Импорт CSV**.
@@ -110,7 +109,6 @@ python manage.py import_universities vuz_contacts_test.csv --encoding cp1251
 ```bash
 python manage.py import_openalex_csv universities_with_counts.csv
 python manage.py import_openalex_csv universities_with_counts.csv --dry-run
-python manage.py import_openalex_csv universities_with_counts.csv --threshold 0.4
 ```
 
 ---
