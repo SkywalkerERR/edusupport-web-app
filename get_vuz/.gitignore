@@ -1,0 +1,9 @@
+.venv/
+venv/
+.idea/
+__pycache__/
+*.pyc
+*.pyo
+*.csv
+*.xml
+vkr.md

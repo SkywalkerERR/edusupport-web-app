@@ -161,17 +161,82 @@ python manage.py test
 
 ---
 
-## Структура проекта
+## Структура репозитория
 
 ```
-abiturient_project/
-├── abiturient_project/     # Настройки Django (settings.py, urls.py)
-├── apps/
-│   ├── core/               # Главная страница, справочник
-│   ├── universities/       # Университеты, импорт данных
-│   ├── programs/           # Программы, калькулятор, сравнение
-│   └── users/              # Авторизация, профиль, избранное, баллы ЕГЭ
-├── templates/              # HTML-шаблоны
-├── static/                 # CSS, JS
-└── manage.py
+edusupport-web-app/
+├── abiturient_project/     # Django веб-приложение
+│   ├── abiturient_project/ # Настройки (settings.py, urls.py)
+│   ├── apps/
+│   │   ├── core/           # Главная страница, справочник
+│   │   ├── universities/   # Университеты, импорт данных
+│   │   ├── programs/       # Программы, калькулятор, сравнение
+│   │   └── users/          # Авторизация, профиль, избранное, баллы ЕГЭ
+│   ├── templates/
+│   ├── static/
+│   └── manage.py
+├── get_vuz/                # Скрипт подготовки данных из Рособрнадзора
+└── OpenAlex_work/          # Скрипт получения наукометрических данных
+```
+
+---
+
+## Скрипты подготовки данных
+
+Перед наполнением веб-приложения данными необходимо последовательно выполнить два скрипта.
+
+### 1. `get_vuz/` — Обработка данных Рособрнадзора
+
+Скрипт берёт исходный CSV-файл с данными вузов от Рособрнадзора, очищает и фильтрует записи, приводит их к формату, совместимому с импортом в приложение.
+
+| Файл | Описание |
+|------|----------|
+| `main.py` | Основной скрипт обработки |
+| `make_test_sample.py` | Формирует тестовую выборку из нескольких вузов |
+| `rewrite_existing_csv.py` | Перезаписывает существующий CSV с обновлёнными данными |
+| `show_vuz.py` | Просмотр и диагностика данных |
+
+**Результат:** `vuz_contacts.csv` и `vuz_contacts_test.csv`
+
+```bash
+cd get_vuz
+pip install -r requirements.txt
+python main.py
+```
+
+---
+
+### 2. `OpenAlex_work/` — Получение наукометрических данных
+
+Скрипт использует файл `vuz_contacts.csv` из предыдущего шага. Конвертирует его в формат для поиска в OpenAlex API, затем запрашивает наукометрические показатели каждого вуза (число публикаций, цитирований, h-index).
+
+| Файл | Описание |
+|------|----------|
+| `convert_csv.py` | Конвертирует `vuz_contacts.csv` → `universities_full.csv` |
+| `src/basic/fetch_university_counts.py` | Запрашивает данные OpenAlex и формирует итоговый файл |
+
+**Результат:** `universities_with_counts.csv` — файл для импорта в веб-приложение командой `import_openalex_csv`
+
+```bash
+cd OpenAlex_work
+pip install -r requirements.txt
+python convert_csv.py
+python src/basic/fetch_university_counts.py
+```
+
+---
+
+## Полный pipeline загрузки данных
+
+```
+Рособрнадзор CSV
+      ↓
+get_vuz/main.py  →  vuz_contacts.csv
+      ↓
+OpenAlex_work/convert_csv.py  →  universities_full.csv
+      ↓
+OpenAlex_work/src/basic/fetch_university_counts.py  →  universities_with_counts.csv
+      ↓
+python manage.py import_universities vuz_contacts.csv
+python manage.py import_openalex_csv universities_with_counts.csv
 ```
