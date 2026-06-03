@@ -7,13 +7,22 @@ from apps.programs.models import Program
 def university_list(request):
     from django.db.models import F
     universities = University.objects.all()
-    query = request.GET.get('q', '').strip()
-    sort  = request.GET.get('sort', '').strip()
+    query         = request.GET.get('q', '').strip()
+    sort          = request.GET.get('sort', '').strip()
+    city_filter   = request.GET.get('city', '').strip()
+    has_dormitory = request.GET.get('has_dormitory', '')
+    has_military  = request.GET.get('has_military', '')
 
     if query:
         universities = universities.filter(
             Q(name__icontains=query) | Q(city__icontains=query)
         )
+    if city_filter:
+        universities = universities.filter(city__icontains=city_filter)
+    if has_dormitory:
+        universities = universities.filter(has_dormitory=True)
+    if has_military:
+        universities = universities.filter(has_military=True)
 
     sort_map = {
         'h_index': 'h_index',
@@ -21,15 +30,20 @@ def university_list(request):
         'works':   'works_count',
     }
     if sort in sort_map:
-        # Вузы с данными — первые, без данных — в конце
         universities = universities.order_by(F(sort_map[sort]).desc(nulls_last=True))
     else:
         universities = universities.order_by('name')
 
+    cities = University.objects.exclude(city='').values_list('city', flat=True).distinct().order_by('city')
+
     return render(request, 'universities/list.html', {
-        'universities': universities,
-        'query': query,
-        'sort': sort,
+        'universities':  universities,
+        'query':         query,
+        'sort':          sort,
+        'city_filter':   city_filter,
+        'has_dormitory': has_dormitory,
+        'has_military':  has_military,
+        'cities':        cities,
     })
 
 
@@ -38,15 +52,12 @@ def university_detail(request, pk):
 
     programs = university.programs.prefetch_related('subjects').all()
 
-    profile = request.GET.get('profile', '')
     degree = request.GET.get('degree', '')
     study_form = request.GET.get('study_form', '')
     q = request.GET.get('q', '').strip()
 
     if q:
         programs = programs.filter(name__icontains=q)
-    if profile:
-        programs = programs.filter(profile=profile)
     if degree:
         programs = programs.filter(degree=degree)
     if study_form:
@@ -64,11 +75,9 @@ def university_detail(request, pk):
     return render(request, 'universities/detail.html', {
         'university': university,
         'programs': programs,
-        'profile': profile,
         'degree': degree,
         'study_form': study_form,
         'q': q,
-        'profiles': Program.PROFILE_CHOICES,
         'stats': stats,
         'programs_count': all_programs.count(),
         'deadlines': deadlines,

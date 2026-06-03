@@ -16,6 +16,17 @@
              placeholder="Например: программная инженерия">
     </div>
     <div class="col-md-4">
+      <label class="form-label small text-muted mb-1">Подразделение (Институт / Факультет)</label>
+      <select name="faculty" class="form-select form-select-sm">
+        <option value="">Все подразделения</option>
+        {% for fac in faculties %}
+          <option value="{{ fac.pk }}" {% if faculty_id == fac.pk|stringformat:"s" %}selected{% endif %}>
+            {{ fac.get_type_display }}: {{ fac.name }}{% if fac.short_name %} ({{ fac.short_name }}){% endif %}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4">
       <label class="form-label small text-muted mb-1">Университет</label>
       <select name="university" class="form-select form-select-sm">
         <option value="">Все университеты</option>
@@ -23,15 +34,6 @@
           <option value="{{ uni.pk }}" {% if university_id == uni.pk|stringformat:"s" %}selected{% endif %}>
             {{ uni.name }}
           </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-4">
-      <label class="form-label small text-muted mb-1">Профиль</label>
-      <select name="profile" class="form-select form-select-sm">
-        <option value="">Все профили</option>
-        {% for val, label in profiles %}
-          <option value="{{ val }}" {% if profile == val %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
     </div>
@@ -44,7 +46,7 @@
         <option value="bachelor"   {% if degree == 'bachelor'   %}selected{% endif %}>Бакалавриат</option>
         <option value="master"     {% if degree == 'master'     %}selected{% endif %}>Магистратура</option>
         <option value="specialist" {% if degree == 'specialist' %}selected{% endif %}>Специалитет</option>
-        <option value="college"    {% if degree == 'college'    %}selected{% endif %}>СПО</option>
+        <option value="postgraduate" {% if degree == 'postgraduate' %}selected{% endif %}>Аспирантура</option>
       </select>
     </div>
     <div class="col-md-3">
@@ -56,7 +58,27 @@
         <option value="evening"   {% if study_form == 'evening'   %}selected{% endif %}>Очно-заочная</option>
       </select>
     </div>
-    <div class="col-md-6 d-flex gap-2 justify-content-md-end align-items-end">
+  </div>
+  <div class="row g-2 align-items-center">
+    <div class="col-auto">
+      <div class="form-check form-check-inline mb-0">
+        <input class="form-check-input" type="checkbox" name="has_dormitory" id="pl_dorm"
+               value="1" {% if has_dormitory %}checked{% endif %}>
+        <label class="form-check-label small" for="pl_dorm">
+          <i class="bi bi-house-door me-1"></i>Общежитие
+        </label>
+      </div>
+    </div>
+    <div class="col-auto">
+      <div class="form-check form-check-inline mb-0">
+        <input class="form-check-input" type="checkbox" name="has_military" id="pl_mil"
+               value="1" {% if has_military %}checked{% endif %}>
+        <label class="form-check-label small" for="pl_mil">
+          <i class="bi bi-shield-fill me-1"></i>Военная кафедра
+        </label>
+      </div>
+    </div>
+    <div class="col d-flex gap-2 justify-content-end">
       <button type="submit" class="btn btn-primary btn-sm">
         <i class="bi bi-funnel me-1"></i>Применить
       </button>
@@ -94,7 +116,16 @@
                   {{ program.name }}
                 </a>
               </h5>
-              <div class="text-muted small mb-2">{{ program.code }} · {{ program.faculty }}</div>
+              {% if program.direction %}
+              {% if program.direction_faculty %}
+              <div class="text-muted small mb-1">
+                <i class="bi bi-columns-gap me-1"></i>{{ program.direction_faculty.get_type_display }}: {{ program.direction_faculty.name }}
+              </div>
+              {% endif %}
+              <div class="text-muted small mb-2">
+                {% if program.direction.code %}<span class="fw-semibold">{{ program.direction.code }}</span> — {% endif %}{{ program.direction.name }}
+              </div>
+              {% endif %}
               <div class="d-flex gap-2 flex-wrap">
                 <span class="program-meta-card degree">
                   <i class="bi bi-mortarboard-fill"></i>{{ program.get_degree_display }}
@@ -102,35 +133,77 @@
                 <span class="program-meta-card study-form">
                   <i class="bi bi-clock-fill"></i>{{ program.get_study_form_display }}
                 </span>
+                {% if program.university.has_dormitory %}
+                <span class="program-meta-card dormitory">
+                  <i class="bi bi-house-door"></i>Общежитие
+                </span>
+                {% endif %}
+                {% if program.university.has_military %}
+                <span class="program-meta-card military">
+                  <i class="bi bi-shield-fill"></i>Воен. кафедра
+                </span>
+                {% endif %}
               </div>
             </div>
-            <span class="badge bg-primary rounded-pill">{{ program.profile }}</span>
           </div>
 
+          {% if program.min_score or program.paid_places is not None or program.budget_places is not None or program.cost_per_year %}
           <div class="row g-3 mt-2 text-center">
+            {% if program.min_score %}
             <div class="col-6 col-md-3">
               <div class="small text-muted">Мин. балл от</div>
               <div class="fw-semibold">{{ program.min_score }}</div>
             </div>
+            {% endif %}
+            {% if program.paid_places is not None %}
             <div class="col-6 col-md-3">
-              <div class="small text-muted">Средний балл</div>
-              <div class="fw-semibold">{{ program.avg_score }}</div>
+              <div class="small text-muted">Внебюджетных мест</div>
+              <div class="fw-semibold">{{ program.paid_places }}</div>
             </div>
+            {% endif %}
+            {% if program.budget_places is not None %}
             <div class="col-6 col-md-3">
               <div class="small text-muted">Бюджетных мест</div>
               <div class="fw-semibold text-success">{{ program.budget_places }}</div>
             </div>
+            {% endif %}
+            {% if program.cost_per_year %}
             <div class="col-6 col-md-3">
               <div class="small text-muted">Стоимость/год</div>
               <div class="fw-semibold">{{ program.cost_per_year|floatformat:0 }} ₽</div>
             </div>
+            {% endif %}
           </div>
+          {% endif %}
 
           <div class="d-flex align-items-center justify-content-between mt-3 flex-wrap gap-2">
-            <div class="d-flex flex-wrap gap-1">
-              {% for subject in program.subjects.all %}
-                <span class="badge bg-light text-secondary border">{{ subject.name }}</span>
-              {% endfor %}
+            <div class="d-flex flex-column gap-1">
+              {% if program.required_program_subjects %}
+              <div class="d-flex flex-wrap gap-1 align-items-center">
+                <span class="small text-muted me-1">Обязательные:</span>
+                {% for ps in program.required_program_subjects %}
+                  <span class="badge bg-light text-secondary border">{{ ps.subject.name }}</span>
+                {% endfor %}
+              </div>
+              {% endif %}
+              {% if program.elective_program_subjects %}
+              <div class="d-flex flex-wrap gap-1 align-items-center">
+                <span class="small text-muted me-1">По выбору:</span>
+                {% for ps in program.elective_program_subjects %}
+                  <span class="badge bg-light text-secondary border">{{ ps.subject.name }}</span>
+                {% endfor %}
+              </div>
+              {% endif %}
+              {% if program.entrance_exams.all %}
+              <div class="d-flex flex-wrap gap-1 align-items-center">
+                <span class="small text-muted me-1">Вступительные:</span>
+                {% for exam in program.entrance_exams.all %}
+                  <span class="badge bg-light text-secondary border">
+                    <i class="bi bi-pencil-square me-1"></i>{{ exam.name }}
+                  </span>
+                {% endfor %}
+              </div>
+              {% endif %}
             </div>
             <div class="d-flex gap-2">
               <button class="btn btn-sm btn-outline-secondary cmp-btn"
@@ -164,7 +237,7 @@
     <ul class="pagination justify-content-center">
       <li class="page-item {% if not page_obj.has_previous %}disabled{% endif %}">
         <a class="page-link"
-           href="?page={{ page_obj.previous_page_number }}&q={{ query }}&profile={{ profile }}">
+           href="?page={{ page_obj.previous_page_number }}&q={{ query }}">
           &laquo;
         </a>
       </li>
@@ -176,7 +249,7 @@
         {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
           <li class="page-item">
             <a class="page-link"
-               href="?page={{ num }}&q={{ query }}&profile={{ profile }}">
+               href="?page={{ num }}&q={{ query }}">
               {{ num }}
             </a>
           </li>
@@ -184,7 +257,7 @@
       {% endfor %}
       <li class="page-item {% if not page_obj.has_next %}disabled{% endif %}">
         <a class="page-link"
-           href="?page={{ page_obj.next_page_number }}&q={{ query }}&profile={{ profile }}">
+           href="?page={{ page_obj.next_page_number }}&q={{ query }}">
           &raquo;
         </a>
       </li>

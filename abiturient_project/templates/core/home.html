@@ -17,10 +17,10 @@
   </div>
 </div>
 
-<!-- Калькулятор ЕГЭ/ОГЭ -->
+<!-- Калькулятор ЕГЭ -->
 <div class="card p-4 mb-4 shadow-sm">
-  <h4 class="fw-bold mb-1">Калькулятор ЕГЭ/ОГЭ</h4>
-  <p class="text-muted small mb-4">Выберите предметы и форму обучения — подберём подходящие программы</p>
+  <h4 class="fw-bold mb-1">Калькулятор ЕГЭ</h4>
+  <p class="text-muted small mb-4">Выберите 3 предмета ЕГЭ и введите баллы — подберём подходящие программы</p>
 
   <form method="get" id="ege-home-form">
     <div class="row g-4 align-items-start">
@@ -45,66 +45,56 @@
         </div>
       </div>
 
-      <!-- Предметы ЕГЭ -->
+      <!-- Предметы ЕГЭ + баллы -->
       <div class="col-md-6">
-        <div class="fw-semibold small mb-2">
-          Предметы ЕГЭ <span class="text-muted fw-normal">(от 1 до 4)</span>
-        </div>
-        <div class="row g-2">
-          {% for slot in "1234" %}
-          <div class="col-6">
-            <select name="s{{ slot }}" class="form-select form-select-sm h-subject-select">
-              <option value="">Выберите предмет</option>
+        <div class="fw-semibold small mb-2">Предметы ЕГЭ и баллы <span class="text-muted fw-normal">(минимум 3)</span></div>
+        <div class="d-flex flex-column gap-2">
+          {% for slot in slots %}
+          {% with forloop.counter as i %}
+          <div class="d-flex gap-2 align-items-center">
+            <select name="s{{ i }}" class="form-select form-select-sm flex-grow-1 h-subject-select">
+              <option value="">— Выберите предмет —</option>
               {% for subj in all_subjects %}
                 <option value="{{ subj.pk }}"
-                  {% if slot == "1" and s1 == subj.pk|stringformat:"s" %}selected
-                  {% elif slot == "2" and s2 == subj.pk|stringformat:"s" %}selected
-                  {% elif slot == "3" and s3 == subj.pk|stringformat:"s" %}selected
-                  {% elif slot == "4" and s4 == subj.pk|stringformat:"s" %}selected
-                  {% endif %}>{{ subj.name }}</option>
+                  {% if slot.sid == subj.pk %}selected{% endif %}>{{ subj.name }}</option>
               {% endfor %}
             </select>
+            <input type="number" name="score{{ i }}"
+                   class="form-control form-control-sm h-score-input"
+                   min="0" max="100" placeholder="Балл"
+                   value="{{ slot.raw_score }}"
+                   style="width:80px;"
+                   {% if not slot.sid %}disabled{% endif %}>
           </div>
+          {% endwith %}
           {% endfor %}
         </div>
       </div>
 
-      <!-- Проходной балл -->
-      <div class="col-md-3" id="h-score-panel"
-           style="{% if subjects_count == 0 %}opacity:0;pointer-events:none;{% endif %}">
-        <div class="fw-semibold small mb-2">Проходной балл</div>
-        <div class="text-muted small mb-1" id="h-range-label">
-          {{ score_min }} — {{ score_max }} проходной балл
+      <!-- Итого и кнопка -->
+      <div class="col-md-3">
+        <div class="fw-semibold small mb-2">Сумма баллов</div>
+        <div class="display-5 fw-bold text-primary lh-1 mb-1" id="h-total-score">{{ total_score }}</div>
+        <div class="text-muted small mb-3">из 300 максимум</div>
+        <div id="h-min-hint" class="d-none text-danger small mb-2">
+          Выберите минимум 3 предмета
         </div>
-        <input type="range" class="form-range mb-2" id="h-score-slider"
-               name="score" min="{{ score_min }}" max="{{ score_max }}"
-               value="{{ score_val }}" step="1" style="accent-color:#0d6efd;">
-        <div class="text-center small mb-3">
-          Ваш балл: <strong id="h-score-val" class="text-primary">{{ score_val }}</strong>
-        </div>
-        <button type="submit" class="btn btn-primary w-100">Подобрать</button>
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="bi bi-search me-1"></i>Подобрать
+        </button>
+        {% if searched %}
+        <a href="{% url 'core:home' %}" class="btn btn-outline-secondary w-100 mt-2 btn-sm">Сбросить</a>
+        {% endif %}
       </div>
 
-    </div>
-
-    <!-- Кнопка без слайдера -->
-    <div class="mt-3 d-flex gap-2">
-      <button type="submit" id="h-btn-alt" class="btn btn-primary btn-sm"
-              {% if subjects_count > 0 %}style="display:none"{% endif %}>
-        <i class="bi bi-search me-1"></i>Найти программы
-      </button>
-      {% if searched %}
-      <a href="{% url 'core:home' %}" class="btn btn-outline-secondary btn-sm">Сбросить</a>
-      {% endif %}
     </div>
   </form>
 
   <!-- Пояснение -->
   {% if not searched %}
   <div class="mt-3 text-muted small" style="line-height:1.7;">
-    Поиск специальностей по предметам ЕГЭ. Выбирайте список ЕГЭ так, чтобы они требовались
-    для поступления именно в таком количестве и составе. Обычно для поступления требуется
-    три экзамена ЕГЭ, но может быть от двух до четырёх.
+    Обычно для поступления на бакалавриат и специалитет требуется сдать три предмета ЕГЭ.
+    Максимально возможная сумма баллов — 300.
   </div>
   {% endif %}
 
@@ -114,8 +104,8 @@
     <hr class="mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div class="fw-semibold">Найдено программ: {{ ege_programs|length }}</div>
-      {% if subjects_count > 0 %}
-      <span class="text-muted small">Ваш балл: <strong class="text-primary">{{ score_val }}</strong> из {{ score_max }}</span>
+      {% if total_score > 0 %}
+      <span class="text-muted small">Сумма баллов: <strong class="text-primary">{{ total_score }}</strong> из 300</span>
       {% endif %}
     </div>
     <div class="row g-3">
@@ -238,11 +228,11 @@
             <h2 class="accordion-header">
               <button class="accordion-button collapsed px-0 fw-normal" type="button"
                       data-bs-toggle="collapse" data-bs-target="#faq{{ forloop.counter }}">
-                {{ item.q }}
+                {{ item.question }}
               </button>
             </h2>
             <div id="faq{{ forloop.counter }}" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-              <div class="accordion-body px-0 text-muted">{{ item.a }}</div>
+              <div class="accordion-body px-0 text-muted">{{ item.answer }}</div>
             </div>
           </div>
           {% endfor %}
@@ -260,17 +250,12 @@
 {% block extra_js %}
 <script>
 (function () {
-  function calcRange(n) {
-    if (n === 0) return { min: 40, max: 100 };
-    return { min: 40 + 39 * (n - 1), max: 100 * n };
-  }
-
+  const form       = document.getElementById('ege-home-form');
   const selects    = document.querySelectorAll('.h-subject-select');
-  const panel      = document.getElementById('h-score-panel');
-  const slider     = document.getElementById('h-score-slider');
-  const rangeLabel = document.getElementById('h-range-label');
-  const scoreVal   = document.getElementById('h-score-val');
-  const btnAlt     = document.getElementById('h-btn-alt');
+  const scoreInputs = document.querySelectorAll('.h-score-input');
+  const totalEl    = document.getElementById('h-total-score');
+  const submitBtn  = form.querySelector('button[type="submit"]');
+  const hintEl     = document.getElementById('h-min-hint');
 
   function countSelected() {
     let c = 0;
@@ -278,29 +263,30 @@
     return c;
   }
 
-  function updatePanel() {
+  function updateTotal() {
+    let total = 0;
+    selects.forEach((sel, idx) => {
+      const input = scoreInputs[idx];
+      if (sel.value) {
+        input.disabled = false;
+        const v = parseInt(input.value, 10);
+        if (!isNaN(v)) total += Math.min(100, Math.max(0, v));
+      } else {
+        input.disabled = true;
+        input.value = '';
+      }
+    });
+    totalEl.textContent = total;
+
     const n = countSelected();
-    const { min, max } = calcRange(n);
-    if (n > 0) {
-      panel.style.opacity = '1';
-      panel.style.pointerEvents = 'auto';
-      btnAlt.style.display = 'none';
-      slider.min = min;
-      slider.max = max;
-      const cur = parseInt(slider.value, 10);
-      if (cur < min || cur > max || isNaN(cur)) slider.value = max;
-      rangeLabel.textContent = min + ' — ' + max + ' проходной балл';
-      scoreVal.textContent = slider.value;
-    } else {
-      panel.style.opacity = '0';
-      panel.style.pointerEvents = 'none';
-      btnAlt.style.display = 'inline-block';
-    }
+    const notEnough = n > 0 && n < 3;
+    submitBtn.disabled = notEnough;
+    hintEl.classList.toggle('d-none', !notEnough);
   }
 
-  slider.addEventListener('input', function () { scoreVal.textContent = this.value; });
-  selects.forEach(s => s.addEventListener('change', updatePanel));
-  updatePanel();
+  selects.forEach(s => s.addEventListener('change', updateTotal));
+  scoreInputs.forEach(inp => inp.addEventListener('input', updateTotal));
+  updateTotal();
 })();
 </script>
 {% endblock %}

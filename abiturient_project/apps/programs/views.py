@@ -4,31 +4,37 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
-from .models import Program, Subject
+from .models import Program, Subject, Faculty
 from .services import match_programs, get_chance
 
 
 def program_list(request):
     from apps.universities.models import University
 
-    programs = Program.objects.select_related('university').prefetch_related('subjects').order_by('id')
+    programs = Program.objects.select_related('university').prefetch_related('program_subjects__subject', 'entrance_exams').order_by('id')
 
     query         = request.GET.get('q', '')
-    profile       = request.GET.get('profile', '')
     degree        = request.GET.get('degree', '')
     study_form    = request.GET.get('study_form', '')
     university_id = request.GET.get('university', '')
+    has_dormitory = request.GET.get('has_dormitory', '')
+    has_military  = request.GET.get('has_military', '')
+    faculty_id    = request.GET.get('faculty', '')
 
     if query:
         programs = programs.filter(name__icontains=query)
-    if profile:
-        programs = programs.filter(profile=profile)
     if degree:
         programs = programs.filter(degree=degree)
     if study_form:
         programs = programs.filter(study_form=study_form)
     if university_id:
         programs = programs.filter(university__pk=university_id)
+    if has_dormitory:
+        programs = programs.filter(university__has_dormitory=True)
+    if has_military:
+        programs = programs.filter(university__has_military=True)
+    if faculty_id:
+        programs = programs.filter(direction__department__faculty__pk=faculty_id)
 
     favorite_ids = set()
     if request.user.is_authenticated:
@@ -45,20 +51,26 @@ def program_list(request):
         'programs':      page_obj,
         'page_obj':      page_obj,
         'query':         query,
-        'profile':       profile,
         'degree':        degree,
         'study_form':    study_form,
         'university_id': university_id,
-        'profiles':      Program.PROFILE_CHOICES,
+        'has_dormitory': has_dormitory,
+        'has_military':  has_military,
+        'faculty_id':    faculty_id,
+        'faculties':     Faculty.objects.select_related('university').order_by('name'),
         'universities':  universities,
         'favorite_ids':  favorite_ids,
     })
 
 def program_detail(request, pk):
     program = get_object_or_404(
-        Program.objects.select_related('university').prefetch_related('subjects'),
+        Program.objects.select_related('university')
+                       .prefetch_related('program_subjects__subject'),
         pk=pk
     )
+    all_ps = list(program.program_subjects.select_related('subject').order_by('subject__name'))
+    required_subjects  = [ps for ps in all_ps if ps.is_required]
+    elective_subjects  = [ps for ps in all_ps if not ps.is_required]
 
     # Шансы поступления если пользователь авторизован и ввёл баллы
     chance = None
@@ -86,11 +98,13 @@ def program_detail(request, pk):
             gap = user_total - (program.min_score or 0)
 
     return render(request, 'programs/detail.html', {
-        'program': program,
-        'chance': chance,
-        'user_total': user_total,
-        'gap': gap,
-        'is_favorite': is_favorite,
+        'program':            program,
+        'chance':             chance,
+        'user_total':         user_total,
+        'gap':                gap,
+        'is_favorite':        is_favorite,
+        'required_subjects':  required_subjects,
+        'elective_subjects':  elective_subjects,
     })
 
 
@@ -120,18 +134,36 @@ def compare_clear(request):
 def compare(request):
     """Страница сравнения программ."""
     ids = request.session.get('compare', [])
-    programs = Program.objects.filter(pk__in=ids).prefetch_related('subjects').select_related('university')
-    # Сохраняем порядок как в сессии
+    programs = (
+        Program.objects
+        .filter(pk__in=ids)
+        .select_related('university', 'direction__faculty', 'direction__department__faculty')
+        .prefetch_related(
+            'program_subjects__subject',
+            'entrance_exams',
+        )
+    )
     programs = sorted(programs, key=lambda p: ids.index(p.pk))
 
-    # Шансы для авторизованного пользователя — добавляем прямо в объект программы
+    # Предметы — разбиваем на обязательные и необязательные
+    for p in programs:
+        p.required_subjects_list  = [ps for ps in p.program_subjects.all() if ps.is_required]
+        p.elective_subjects_list  = [ps for ps in p.program_subjects.all() if not ps.is_required]
+        p.entrance_exams_list     = list(p.entrance_exams.all())
+
+    # Предупреждение о разных уровнях подготовки
+    degrees = {p.degree for p in programs}
+    degree_mismatch = len(degrees) > 1
+
+    # Шансы для авторизованного пользователя
     if request.user.is_authenticated:
         score_map = {
             er.subject_id: er.score
             for er in request.user.exam_results.all()
         }
         for p in programs:
-            scores = [score_map[s.id] for s in p.subjects.all() if s.id in score_map]
+            scores = [ps.subject_id for ps in p.program_subjects.all() if ps.subject_id in score_map]
+            scores = [score_map[sid] for sid in scores]
             if scores:
                 total = sum(scores)
                 p.user_total = total
@@ -141,7 +173,8 @@ def compare(request):
                 p.user_chance = None
 
     return render(request, 'programs/compare.html', {
-        'programs': programs,
+        'programs':        programs,
+        'degree_mismatch': degree_mismatch,
     })
 
 

@@ -213,6 +213,53 @@
   </div>
 </div>
 
+<!-- Структура университета -->
+{% if university.faculties.exists %}
+<div class="card mb-4">
+  <div class="card-header bg-white fw-semibold py-3">
+    <i class="bi bi-diagram-3 text-primary me-2"></i>Структура университета
+  </div>
+  <div class="accordion accordion-flush" id="facultiesAccordion">
+    {% for faculty in university.faculties.all %}
+    <div class="accordion-item">
+      <h2 class="accordion-header">
+        <button class="accordion-button collapsed py-3" type="button"
+                data-bs-toggle="collapse" data-bs-target="#fac{{ faculty.pk }}">
+          <span class="fw-semibold me-2">{{ faculty.get_type_display }}</span>
+          {{ faculty.name }}
+          {% if faculty.short_name %}
+            <span class="text-muted ms-2 fw-normal">({{ faculty.short_name }})</span>
+          {% endif %}
+        </button>
+      </h2>
+      <div id="fac{{ faculty.pk }}" class="accordion-collapse collapse">
+        <div class="accordion-body p-0">
+          {% for dept in faculty.departments.all %}
+          <div class="border-bottom px-4 py-2">
+            <div class="fw-semibold small text-dark mb-1">
+              <i class="bi bi-building me-1 text-muted"></i>{{ dept.name }}
+            </div>
+            {% for direction in dept.directions.all %}
+            <div class="text-muted small ms-3 py-1">
+              <i class="bi bi-signpost me-1"></i>
+              {% if direction.code %}<span class="text-secondary me-1">{{ direction.code }}</span>{% endif %}
+              {{ direction.name }}
+            </div>
+            {% empty %}
+            <div class="text-muted small ms-3 fst-italic">Направления не добавлены</div>
+            {% endfor %}
+          </div>
+          {% empty %}
+          <div class="text-muted small px-4 py-3 fst-italic">Кафедры не добавлены</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <!-- Фильтры программ -->
 <h4 class="fw-semibold mb-3">Образовательные программы</h4>
 
@@ -224,22 +271,13 @@
              placeholder="Например: программная инженерия">
     </div>
     <div class="col-md-4">
-      <label class="form-label small text-muted mb-1">Профиль</label>
-      <select name="profile" class="form-select form-select-sm">
-        <option value="">Все профили</option>
-        {% for val, label in profiles %}
-          <option value="{{ val }}" {% if profile == val %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-4">
       <label class="form-label small text-muted mb-1">Уровень образования</label>
       <select name="degree" class="form-select form-select-sm">
         <option value="">Все уровни</option>
         <option value="bachelor"   {% if degree == 'bachelor'   %}selected{% endif %}>Бакалавриат</option>
         <option value="master"     {% if degree == 'master'     %}selected{% endif %}>Магистратура</option>
         <option value="specialist" {% if degree == 'specialist' %}selected{% endif %}>Специалитет</option>
-        <option value="college"    {% if degree == 'college'    %}selected{% endif %}>СПО</option>
+        <option value="postgraduate" {% if degree == 'postgraduate' %}selected{% endif %}>Аспирантура</option>
       </select>
     </div>
   </div>
@@ -277,7 +315,11 @@
                   {{ program.name }}
                 </a>
               </h6>
-              <div class="text-muted small mb-1">{{ program.code }} · {{ program.faculty }}</div>
+              {% if program.direction %}
+              <div class="text-muted small mb-1">
+                {% if program.direction.code %}<span class="fw-semibold">{{ program.direction.code }}</span> — {% endif %}{{ program.direction.name }}
+              </div>
+              {% endif %}
               <div class="d-flex gap-2 mt-1 flex-wrap">
                 <span class="program-meta-card degree">
                   <i class="bi bi-mortarboard-fill"></i>{{ program.get_degree_display }}
@@ -285,9 +327,18 @@
                 <span class="program-meta-card study-form">
                   <i class="bi bi-clock-fill"></i>{{ program.get_study_form_display }}
                 </span>
+                {% if program.university.has_dormitory %}
+                <span class="program-meta-card dormitory">
+                  <i class="bi bi-house-door"></i>Общежитие
+                </span>
+                {% endif %}
+                {% if program.university.has_military %}
+                <span class="program-meta-card military">
+                  <i class="bi bi-shield-fill"></i>Воен. кафедра
+                </span>
+                {% endif %}
               </div>
             </div>
-            <span class="badge bg-primary">{{ program.profile }}</span>
           </div>
 
           <div class="row g-2 mt-2 text-center">
@@ -327,7 +378,7 @@
 {% else %}
   <div class="text-center py-4 text-muted">
     <i class="bi bi-journal-x fs-1 d-block mb-2"></i>
-    {% if q or profile or degree or study_form %}
+    {% if q or degree or study_form %}
       По заданным фильтрам программы не найдены.
     {% else %}
       Программы не найдены.

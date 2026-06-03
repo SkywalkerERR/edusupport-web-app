@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth.models import User
 from apps.universities.models import University
-from .models import Program, Subject, AdmissionPlan
+from .models import Program, Subject, ProgramSubject
 from .services import get_chance
 
 
@@ -10,13 +10,21 @@ class GetChanceTest(TestCase):
     """Проверка алгоритма расчёта шансов поступления."""
 
     def _make_program(self, min_score):
+        """
+        Создаёт программу с одним обязательным предметом,
+        чей min_subject_score равен min_score.
+        Program.min_score вернёт это значение.
+        """
         uni = University.objects.create(name='Тест', city='Тест')
         p = Program.objects.create(
-            university=uni, name='Прог', code='09.03.01',
-            faculty='ФАК', profile='IT', degree='bachelor',
-            study_form='full_time',
+            university=uni, name='Прог',
+            degree='bachelor', study_form='full_time',
         )
-        AdmissionPlan.objects.create(program=p, year=2024, min_score=min_score)
+        subject = Subject.objects.create(name='Математика')
+        ProgramSubject.objects.create(
+            program=p, subject=subject,
+            is_required=True, min_subject_score=min_score,
+        )
         return p
 
     def test_high_chance(self):
@@ -56,7 +64,6 @@ class ProgramViewTest(TestCase):
         self.uni = University.objects.create(name='ЮУрГУ', city='Челябинск')
         self.program = Program.objects.create(
             university=self.uni, name='Программная инженерия',
-            code='09.03.04', faculty='Политех', profile='IT',
             degree='bachelor', study_form='full_time',
         )
 

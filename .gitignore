@@ -2,9 +2,17 @@ venv/
 .env
 __pycache__/
 *.pyc
+*.pyo
 db.sqlite3
 .idea/
 staticfiles/
+media/
+
+# Claude / GitNexus — AI tools
 CLAUDE.md
+AGENTS.md
 .claude/
+.gitnexus/
 schema.dot
+erd.html
+erd2.html

@@ -7,13 +7,22 @@
   <span class="text-muted">Найдено: {{ universities|length }}</span>
 </div>
 
-<!-- Поиск и сортировка -->
+<!-- Поиск и фильтры -->
 <form method="get" class="card p-3 mb-4">
-  <div class="row g-2 align-items-end">
-    <div class="col-md-6">
-      <label class="form-label small text-muted mb-1">Поиск по названию или городу</label>
+  <div class="row g-2 mb-2">
+    <div class="col-md-5">
+      <label class="form-label small text-muted mb-1">Поиск по названию</label>
       <input type="text" name="q" value="{{ query }}" class="form-control form-control-sm"
-             placeholder="Например: МГУ или Москва">
+             placeholder="Например: ЮУрГУ">
+    </div>
+    <div class="col-md-4">
+      <label class="form-label small text-muted mb-1">Город</label>
+      <select name="city" class="form-select form-select-sm">
+        <option value="">Все города</option>
+        {% for city in cities %}
+          <option value="{{ city }}" {% if city_filter == city %}selected{% endif %}>{{ city }}</option>
+        {% endfor %}
+      </select>
     </div>
     <div class="col-md-3">
       <label class="form-label small text-muted mb-1">Сортировка</label>
@@ -24,11 +33,31 @@
         <option value="works"   {% if sort == 'works'   %}selected{% endif %}>По публикациям</option>
       </select>
     </div>
-    <div class="col-md-3 d-flex gap-2">
-      <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+  </div>
+  <div class="row g-2 align-items-center">
+    <div class="col-auto">
+      <div class="form-check form-check-inline mb-0">
+        <input class="form-check-input" type="checkbox" name="has_dormitory" id="f_dorm"
+               value="1" {% if has_dormitory %}checked{% endif %}>
+        <label class="form-check-label small" for="f_dorm">
+          <i class="bi bi-house-door me-1 text-primary"></i>Общежитие
+        </label>
+      </div>
+    </div>
+    <div class="col-auto">
+      <div class="form-check form-check-inline mb-0">
+        <input class="form-check-input" type="checkbox" name="has_military" id="f_mil"
+               value="1" {% if has_military %}checked{% endif %}>
+        <label class="form-check-label small" for="f_mil">
+          <i class="bi bi-shield-fill me-1 text-success"></i>Военная кафедра
+        </label>
+      </div>
+    </div>
+    <div class="col d-flex gap-2 justify-content-end">
+      <button type="submit" class="btn btn-primary btn-sm">
         <i class="bi bi-search me-1"></i>Найти
       </button>
-      {% if query or sort %}
+      {% if query or sort or city_filter or has_dormitory or has_military %}
       <a href="{% url 'universities:list' %}" class="btn btn-outline-secondary btn-sm">Сбросить</a>
       {% endif %}
     </div>
@@ -75,9 +104,23 @@
             {% endif %}
           </div>
           {% endif %}
-          <a href="{% url 'universities:detail' uni.pk %}" class="btn btn-sm btn-outline-primary">
-            Подробнее
-          </a>
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-2">
+            <div class="d-flex gap-2 flex-wrap">
+              {% if uni.has_dormitory %}
+              <span class="program-meta-card dormitory">
+                <i class="bi bi-house-door"></i>Общежитие
+              </span>
+              {% endif %}
+              {% if uni.has_military %}
+              <span class="program-meta-card military">
+                <i class="bi bi-shield-fill"></i>Военная кафедра
+              </span>
+              {% endif %}
+            </div>
+            <a href="{% url 'universities:detail' uni.pk %}" class="btn btn-sm btn-outline-primary">
+              Подробнее
+            </a>
+          </div>
         </div>
       </div>
     </div>

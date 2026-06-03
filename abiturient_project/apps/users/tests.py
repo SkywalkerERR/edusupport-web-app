@@ -29,9 +29,8 @@ class FavoriteViewTest(TestCase):
         self.user = User.objects.create_user('testuser', password='pass')
         uni = University.objects.create(name='ЮУрГУ', city='Челябинск')
         self.program = Program.objects.create(
-            university=uni, name='Информатика', code='02.03.02',
-            faculty='ФАК', profile='IT', degree='bachelor',
-            study_form='full_time',
+            university=uni, name='Информатика',
+            degree='bachelor', study_form='full_time',
         )
         self.client.login(username='testuser', password='pass')
 

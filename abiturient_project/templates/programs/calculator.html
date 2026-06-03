@@ -3,7 +3,16 @@
 
 {% block content %}
 <h2 class="fw-semibold mb-1">Подбор образовательных программ</h2>
-<p class="text-muted mb-4">Программы подобраны на основе ваших баллов ЕГЭ из профиля</p>
+<p class="text-muted mb-3">Программы подобраны на основе ваших баллов ЕГЭ из профиля</p>
+<div class="alert alert-info small mb-4 d-flex gap-2">
+  <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+  <div>
+    <strong>Важно:</strong> показатели поступления являются <strong>ориентировочными</strong>
+    и рассчитываются на основе разницы между вашим баллом и минимальным проходным прошлого года.
+    Это <em>не статистическая вероятность</em>, а рекомендательный показатель для сравнения программ.
+    Реальный конкурс меняется ежегодно.
+  </div>
+</div>
 
 {% if not user.is_authenticated %}
   <div class="alert alert-warning d-flex align-items-center gap-3">
@@ -57,7 +66,7 @@
          data-bs-toggle="collapse" data-bs-target="#chanceInfo">
       <div class="d-flex align-items-center justify-content-between">
         <div class="fw-semibold">
-          <i class="bi bi-question-circle text-primary me-2"></i>Как формируются шансы поступления?
+          <i class="bi bi-question-circle text-primary me-2"></i>Как рассчитывается показатель поступления?
         </div>
         <i class="bi bi-chevron-down text-muted"></i>
       </div>
@@ -89,7 +98,7 @@
               </div>
               <div class="small" style="color:#0f6e56;">
                 Ваш балл превышает минимальный проходной на <strong>30 и более баллов</strong>.
-                Вероятность поступления очень высокая — вы уверенно в зоне зачисления.
+                Ваш балл значительно превышает проходной — вы уверенно в зоне зачисления.
               </div>
             </div>
           </div>
@@ -122,7 +131,7 @@
               </div>
               <div class="small" style="color:#993c1d;">
                 Ваш балл ниже минимального проходного на <strong>до 20 баллов</strong>.
-                Поступление маловероятно, но возможно при снижении конкурса в текущем году.
+                По текущим данным поступление затруднено, однако конкурс меняется ежегодно.
               </div>
             </div>
           </div>
@@ -133,7 +142,7 @@
               </div>
               <div class="small" style="color:#a32d2d;">
                 Разрыв составляет <strong>более 20 баллов</strong>.
-                Поступление крайне маловероятно. Рассмотрите программы с более низким проходным баллом.
+                По текущим данным поступление крайне затруднено. Рассмотрите программы с более низким проходным баллом.
               </div>
             </div>
           </div>
@@ -275,7 +284,7 @@
                 </a>
               </h5>
               <div class="text-muted small">
-                {{ item.program.university.name }} · {{ item.program.faculty }}
+                {{ item.program.university.name }}
               </div>
               <div class="d-flex gap-2 mt-1 flex-wrap">
                 <span class="program-meta-card degree">

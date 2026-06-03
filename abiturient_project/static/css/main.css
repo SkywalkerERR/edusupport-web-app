@@ -116,6 +116,18 @@ footer {
   border-color: #9fe1cb;
 }
 
+.program-meta-card.dormitory {
+  background: #e8f1ff;
+  color: #1a5fa8;
+  border-color: #9dc4f0;
+}
+
+.program-meta-card.military {
+  background: #fdecea;
+  color: #a02020;
+  border-color: #f0a0a0;
+}
+
 /* ===== Пагинация ===== */
 .pagination .page-link {
   color: #6f42c1;

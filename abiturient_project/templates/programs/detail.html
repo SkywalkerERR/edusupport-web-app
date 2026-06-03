@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load format_tags %}
 {% block title %}{{ program.name }} — ЮУрГУ{% endblock %}
 
 {% block content %}
@@ -22,20 +23,31 @@
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
           <div>
-            <span class="badge bg-primary mb-2">{{ program.profile }}</span>
             <h2 class="fw-semibold mb-1">{{ program.name }}</h2>
-            <div class="text-muted mb-1">
-              <i class="bi bi-hash me-1"></i>{{ program.code }}
-            </div>
             <div class="text-muted">
               <i class="bi bi-building me-1"></i>
               <a href="{% url 'universities:detail' program.university.pk %}" class="text-decoration-none text-muted">
                 {{ program.university.name }}
               </a>
             </div>
+            {% if program.direction %}
+            {% if program.direction_faculty %}
             <div class="text-muted mt-1">
-              <i class="bi bi-door-open me-1"></i>{{ program.faculty }}
+              <i class="bi bi-columns-gap me-1"></i>
+              {{ program.direction_faculty.get_type_display }}: {{ program.direction_faculty.name }}
             </div>
+            {% endif %}
+            {% if program.direction.department %}
+            <div class="text-muted mt-1">
+              <i class="bi bi-diagram-3 me-1"></i>
+              Кафедра: {{ program.direction.department.name }}
+            </div>
+            {% endif %}
+            <div class="text-muted mt-1">
+              <i class="bi bi-signpost me-1"></i>
+              Направление: {% if program.direction.code %}{{ program.direction.code }} — {% endif %}{{ program.direction.name }}
+            </div>
+            {% endif %}
             <div class="d-flex gap-2 mt-2 flex-wrap">
               <span class="program-meta-card degree">
                 <i class="bi bi-mortarboard-fill"></i>{{ program.get_degree_display }}
@@ -43,6 +55,16 @@
               <span class="program-meta-card study-form">
                 <i class="bi bi-clock-fill"></i>{{ program.get_study_form_display }}
               </span>
+              {% if program.university.has_dormitory %}
+              <span class="program-meta-card dormitory">
+                <i class="bi bi-house-door"></i>Общежитие
+              </span>
+              {% endif %}
+              {% if program.university.has_military %}
+              <span class="program-meta-card military">
+                <i class="bi bi-shield-fill"></i>Воен. кафедра
+              </span>
+              {% endif %}
             </div>
           </div>
           {% if user.is_authenticated %}
@@ -69,21 +91,51 @@
     </div>
     {% endif %}
 
-    <!-- Предметы ЕГЭ -->
+    <!-- Вступительные испытания -->
+    {% if required_subjects or elective_subjects %}
     <div class="card mb-4">
       <div class="card-header bg-white fw-semibold py-3">
-        <i class="bi bi-journal-check text-primary me-2"></i>Необходимые предметы ЕГЭ
+        <i class="bi bi-journal-check text-primary me-2"></i>Вступительные испытания
       </div>
-      <div class="card-body">
-        <div class="d-flex flex-wrap gap-2">
-          {% for subject in program.subjects.all %}
-            <span class="badge bg-light text-dark border fs-6 px-3 py-2">
-              <i class="bi bi-check2 text-success me-1"></i>{{ subject.name }}
-            </span>
+      <div class="card-body p-0">
+
+        {% if required_subjects %}
+        <div class="px-3 pt-3 pb-1">
+          <div class="text-uppercase fw-bold small text-muted mb-2" style="letter-spacing:.06em; font-size:0.72rem;">
+            Обязательные экзамены
+          </div>
+          <div class="d-flex justify-content-between text-muted small border-bottom pb-1 mb-1">
+            <span>Предмет</span><span>Мин. балл</span>
+          </div>
+          {% for ps in required_subjects %}
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <span><i class="bi bi-check-circle-fill text-success me-2"></i>{{ ps.subject.name }}</span>
+            <span class="fw-semibold">{{ ps.min_subject_score|default:"—" }}</span>
+          </div>
           {% endfor %}
         </div>
+        {% endif %}
+
+        {% if elective_subjects %}
+        <div class="px-3 pt-3 pb-3">
+          <div class="text-uppercase fw-bold small text-muted mb-2" style="letter-spacing:.06em; font-size:0.72rem;">
+            Экзамены по выбору
+          </div>
+          <div class="d-flex justify-content-between text-muted small border-bottom pb-1 mb-1">
+            <span>Предмет</span><span>Мин. балл</span>
+          </div>
+          {% for ps in elective_subjects %}
+          <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <span><i class="bi bi-circle text-primary me-2"></i>{{ ps.subject.name }}</span>
+            <span class="fw-semibold">{{ ps.min_subject_score|default:"—" }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
       </div>
     </div>
+    {% endif %}
 
     <!-- Шансы поступления (если авторизован и есть баллы) -->
     {% if chance %}
@@ -152,20 +204,28 @@
       </div>
       <div class="list-group list-group-flush">
         <div class="list-group-item d-flex justify-content-between align-items-center py-3">
-          <span class="text-muted small">Мин. проходной балл от</span>
-          <span class="fw-semibold">{{ program.min_score }}</span>
+          <span class="text-muted small">Мин. сумма баллов (порог)</span>
+          <span class="fw-semibold">{{ program.min_score|default:"—" }}</span>
         </div>
         <div class="list-group-item d-flex justify-content-between align-items-center py-3">
-          <span class="text-muted small">Средний балл прошлого года</span>
-          <span class="fw-semibold">{{ program.avg_score }}</span>
+          <span class="text-muted small">Проходной балл (бюджет)</span>
+          <span class="fw-semibold text-success">{{ program.passing_score_budget|default:"—" }}</span>
+        </div>
+        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+          <span class="text-muted small">Проходной балл (контракт)</span>
+          <span class="fw-semibold text-warning">{{ program.passing_score_paid|default:"—" }}</span>
         </div>
         <div class="list-group-item d-flex justify-content-between align-items-center py-3">
           <span class="text-muted small">Бюджетных мест</span>
           <span class="fw-semibold text-success">{{ program.budget_places }}</span>
         </div>
         <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+          <span class="text-muted small">Платных мест</span>
+          <span class="fw-semibold">{{ program.paid_places }}</span>
+        </div>
+        <div class="list-group-item d-flex justify-content-between align-items-center py-3">
           <span class="text-muted small">Стоимость обучения/год</span>
-          <span class="fw-semibold">{{ program.cost_per_year|floatformat:0 }} ₽</span>
+          <span class="fw-semibold">{{ program.cost_per_year|spacenumber }} ₽</span>
         </div>
         <div class="list-group-item d-flex justify-content-between align-items-center py-3">
           <span class="text-muted small">Срок обучения</span>

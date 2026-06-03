@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}Сравнение программ — ЮУрГУ{% endblock %}
+{% load format_tags %}
+{% block title %}Сравнение программ{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
@@ -28,97 +29,87 @@
   </div>
 
 {% else %}
+
+{% if degree_mismatch %}
+<div class="alert alert-warning d-flex align-items-center gap-2 mb-3">
+  <i class="bi bi-exclamation-triangle-fill fs-5 flex-shrink-0"></i>
+  <div>
+    <strong>Внимание!</strong> Вы сравниваете программы разных уровней подготовки.
+    Условия поступления и структура программ могут существенно отличаться.
+  </div>
+</div>
+{% endif %}
+
 <div class="table-responsive">
-  <table class="table table-bordered align-middle" style="min-width: 600px;">
-    <thead class="table-light">
-      <tr>
-        <th style="width: 180px;" class="text-muted fw-normal">Параметр</th>
+  <table class="table table-bordered align-middle compare-table" style="min-width: 600px;">
+    <thead>
+      <tr class="table-primary">
+        <th style="width:200px;" class="text-muted fw-normal small">Программа</th>
         {% for p in programs %}
         <th>
-          <div class="fw-semibold">{{ p.name }}</div>
-          <div class="text-muted small fw-normal">{{ p.code }}</div>
+          <a href="{% url 'programs:detail' p.pk %}" class="text-decoration-none text-dark fw-semibold">
+            {{ p.name }}
+          </a>
         </th>
         {% endfor %}
       </tr>
     </thead>
     <tbody>
 
-      <!-- Факультет -->
+      <!-- Уровень подготовки -->
       <tr>
-        <td class="text-muted small">Факультет</td>
-        {% for p in programs %}
-        <td class="small">{{ p.faculty }}</td>
-        {% endfor %}
-      </tr>
-
-      <!-- Профиль -->
-      <tr>
-        <td class="text-muted small">Профиль</td>
-        {% for p in programs %}
-        <td><span class="badge bg-primary">{{ p.profile }}</span></td>
-        {% endfor %}
-      </tr>
-
-      <!-- Мин. балл -->
-      <tr class="table-light">
-        <td class="text-muted small">Мин. проходной балл</td>
-        {% for p in programs %}
-          {% with min_val=programs.0.min_score %}
-          <td class="fw-semibold {% if p.min_score == min_val %}text-success{% endif %}">
-            {{ p.min_score }}
-          </td>
-          {% endwith %}
-        {% endfor %}
-      </tr>
-
-      <!-- Средний балл -->
-      <tr>
-        <td class="text-muted small">Средний балл</td>
-        {% for p in programs %}
-        <td>{{ p.avg_score }}</td>
-        {% endfor %}
-      </tr>
-
-      <!-- Бюджетных мест -->
-      <tr class="table-light">
-        <td class="text-muted small">Бюджетных мест</td>
-        {% for p in programs %}
-        <td class="text-success fw-semibold">{{ p.budget_places }}</td>
-        {% endfor %}
-      </tr>
-
-      <!-- Стоимость -->
-      <tr>
-        <td class="text-muted small">Стоимость/год</td>
-        {% for p in programs %}
-        <td>{{ p.cost_per_year|floatformat:0 }} ₽</td>
-        {% endfor %}
-      </tr>
-
-      <!-- Срок обучения -->
-      <tr class="table-light">
-        <td class="text-muted small">Срок обучения</td>
-        {% for p in programs %}
-        <td>{{ p.years }} года</td>
-        {% endfor %}
-      </tr>
-
-      <!-- Предметы ЕГЭ -->
-      <tr>
-        <td class="text-muted small">Предметы ЕГЭ</td>
+        <td class="text-muted small">Уровень подготовки</td>
         {% for p in programs %}
         <td>
-          <div class="d-flex flex-column gap-1">
-            {% for subject in p.subjects.all %}
-              <span class="badge bg-light text-secondary border">{{ subject.name }}</span>
-            {% endfor %}
-          </div>
+          <span class="program-meta-card degree">
+            <i class="bi bi-mortarboard-fill"></i>{{ p.get_degree_display }}
+          </span>
+        </td>
+        {% endfor %}
+      </tr>
+
+      <!-- Форма обучения -->
+      <tr>
+        <td class="text-muted small">Форма обучения</td>
+        {% for p in programs %}
+        <td>
+          <span class="program-meta-card study-form">
+            <i class="bi bi-clock-fill"></i>{{ p.get_study_form_display }}
+          </span>
+        </td>
+        {% endfor %}
+      </tr>
+
+      <!-- Общежитие -->
+      <tr>
+        <td class="text-muted small">Общежитие</td>
+        {% for p in programs %}
+        <td>
+          {% if p.university.has_dormitory %}
+            <span class="program-meta-card dormitory"><i class="bi bi-house-door"></i>Есть</span>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+
+      <!-- Военная кафедра -->
+      <tr>
+        <td class="text-muted small">Военная кафедра</td>
+        {% for p in programs %}
+        <td>
+          {% if p.university.has_military %}
+            <span class="program-meta-card military"><i class="bi bi-shield-fill"></i>Есть</span>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
         </td>
         {% endfor %}
       </tr>
 
       <!-- Университет -->
-      <tr class="table-light">
+      <tr>
         <td class="text-muted small">Университет</td>
         {% for p in programs %}
         <td class="small">
@@ -129,20 +120,193 @@
         {% endfor %}
       </tr>
 
+      <!-- Институт/Факультет -->
+      <tr>
+        <td class="text-muted small">Институт / Факультет</td>
+        {% for p in programs %}
+        <td class="small">
+          {% if p.direction_faculty %}
+            {{ p.direction_faculty.get_type_display }}: {{ p.direction_faculty.name }}
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+
+      <!-- Направление -->
+      <tr>
+        <td class="text-muted small">Направление подготовки</td>
+        {% for p in programs %}
+        <td class="small">
+          {% if p.direction %}
+            {% if p.direction.code %}<span class="fw-semibold">{{ p.direction.code }}</span> — {% endif %}
+            {{ p.direction.name }}
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+
+      <!-- Разделитель: Приём -->
+      <tr class="table-light">
+        <td colspan="{{ programs|length|add:1 }}" class="small fw-semibold text-uppercase text-muted py-1 px-3"
+            style="letter-spacing:.05em;">
+          <i class="bi bi-clipboard-data me-1"></i>Данные о приёме
+        </td>
+      </tr>
+
+      <!-- Мин. балл -->
+      <tr>
+        <td class="text-muted small">Мин. сумма баллов (порог)</td>
+        {% for p in programs %}
+        <td class="fw-semibold">
+          {% if p.min_score %}
+            <span class="text-success">{{ p.min_score }}</span>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+
+      <!-- Бюджетных мест -->
+      <tr>
+        <td class="text-muted small">Бюджетных мест</td>
+        {% for p in programs %}
+        <td class="fw-semibold">
+          {% if p.budget_places is not None %}
+            <span class="text-success">{{ p.budget_places }}</span>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+
+      <!-- Внебюджетных мест -->
+      <tr>
+        <td class="text-muted small">Внебюджетных мест</td>
+        {% for p in programs %}
+        <td class="fw-semibold">
+          {% if p.paid_places is not None %}
+            {{ p.paid_places }}
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+
+      <!-- Стоимость -->
+      <tr>
+        <td class="text-muted small">Стоимость/год</td>
+        {% for p in programs %}
+        <td>
+          {% if p.cost_per_year %}
+            {{ p.cost_per_year|spacenumber }} ₽
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+
+      <!-- Срок обучения -->
+      <tr>
+        <td class="text-muted small">Срок обучения</td>
+        {% for p in programs %}
+        <td>{{ p.years }} г.</td>
+        {% endfor %}
+      </tr>
+
+      <!-- Разделитель: Вступительные испытания -->
+      <tr class="table-light">
+        <td colspan="{{ programs|length|add:1 }}" class="small fw-semibold text-uppercase text-muted py-1 px-3"
+            style="letter-spacing:.05em;">
+          <i class="bi bi-pencil-square me-1"></i>Вступительные испытания
+        </td>
+      </tr>
+
+      <!-- Обязательные предметы ЕГЭ -->
+      <tr>
+        <td class="text-muted small">Обязательные предметы ЕГЭ</td>
+        {% for p in programs %}
+        <td>
+          {% if p.required_subjects_list %}
+            <div class="d-flex flex-column gap-1">
+              {% for ps in p.required_subjects_list %}
+              <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle">
+                {{ ps.subject.name }}{% if ps.min_subject_score %} <span class="opacity-75">(от {{ ps.min_subject_score }})</span>{% endif %}
+              </span>
+              {% endfor %}
+            </div>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+
+      <!-- Предметы ЕГЭ по выбору -->
+      <tr>
+        <td class="text-muted small">Предметы ЕГЭ по выбору</td>
+        {% for p in programs %}
+        <td>
+          {% if p.elective_subjects_list %}
+            <div class="d-flex flex-column gap-1">
+              {% for ps in p.elective_subjects_list %}
+              <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle">
+                {{ ps.subject.name }}{% if ps.min_subject_score %} <span class="opacity-75">(от {{ ps.min_subject_score }})</span>{% endif %}
+              </span>
+              {% endfor %}
+            </div>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+
+      <!-- Вступительные испытания -->
+      <tr>
+        <td class="text-muted small">Внутренние испытания</td>
+        {% for p in programs %}
+        <td>
+          {% if p.entrance_exams_list %}
+            <div class="d-flex flex-column gap-1">
+              {% for exam in p.entrance_exams_list %}
+              <span class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning-subtle">
+                {{ exam.name }}{% if exam.min_score %} <span class="opacity-75">(от {{ exam.min_score }})</span>{% endif %}
+              </span>
+              {% endfor %}
+            </div>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+
       <!-- Шансы поступления -->
       {% if user.is_authenticated %}
+      <tr class="table-light">
+        <td colspan="{{ programs|length|add:1 }}" class="small fw-semibold text-uppercase text-muted py-1 px-3"
+            style="letter-spacing:.05em;">
+          <i class="bi bi-graph-up me-1"></i>Ваши шансы
+        </td>
+      </tr>
       <tr>
-        <td class="text-muted small">Ваши шансы</td>
+        <td class="text-muted small">Показатель поступления</td>
         {% for p in programs %}
         <td>
           {% if p.user_chance %}
-            <span class="chance-badge chance-{{ p.user_chance.css }}">
-              {{ p.user_chance.label }}
-            </span>
+            <span class="chance-badge chance-{{ p.user_chance.css }}">{{ p.user_chance.label }}</span>
             <div class="progress mt-2" style="height: 6px;">
               <div class="progress-bar" style="width: {{ p.user_chance.pct }}%;"></div>
             </div>
-            <div class="small text-muted mt-1">Балл: {{ p.user_total }}</div>
+            <div class="small text-muted mt-1">Сумма баллов: {{ p.user_total }}</div>
           {% else %}
             <span class="text-muted small">— нет баллов</span>
           {% endif %}
